@@ -9,7 +9,12 @@
 <body>
     <div class="container">
         <header>
-            <h1>🎟️ Gutschein-Verwaltung</h1>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h1>🎟️ Gutschein-Verwaltung</h1>
+                <button id="admin-btn" onclick="handleAdminButton()" style="padding: 8px 16px; font-size: 14px;">
+                    🔐 Admin
+                </button>
+            </div>
         </header>
 
         <main id="app">
@@ -22,6 +27,9 @@
     
     <!-- QR-Code Library -->
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+
+    <!-- Chart.js Library -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
     
     <!-- Unsere JS-Dateien -->
     <script src="js/config.js"></script>
