@@ -65,9 +65,177 @@ async function showDashboard() {
     `;
 }
 
-// Platzhalter-Funktionen (bauen wir später)
+// Gutschein erstellen - Formular
 function showCreateVoucher() {
-    alert('Gutschein erstellen - kommt später!');
+    const app = document.getElementById('app');
+    
+    app.innerHTML = `
+        <div class="create-page">
+            <div class="list-header">
+                <h2>+ Neuer Gutschein</h2>
+                <button onclick="showDashboard()">← Zurück</button>
+            </div>
+            
+            <form id="create-form" onsubmit="handleCreateVoucher(event)">
+                <div class="form-group">
+                    <label for="voucher-value">Wert (€) *</label>
+                    <input 
+                        type="number" 
+                        id="voucher-value" 
+                        min="1" 
+                        step="0.01" 
+                        required
+                        placeholder="z.B. 50"
+                    >
+                </div>
+                
+                <div class="form-group">
+                    <label for="buyer-name">Käufer-Name (optional)</label>
+                    <input 
+                        type="text" 
+                        id="buyer-name" 
+                        placeholder="z.B. Max Mustermann"
+                    >
+                </div>
+                
+                <div class="form-group">
+                    <label for="buyer-email">Käufer-E-Mail (optional)</label>
+                    <input 
+                        type="email" 
+                        id="buyer-email" 
+                        placeholder="z.B. max@example.com"
+                    >
+                </div>
+                
+                <div class="form-group">
+                    <label for="delivery-method">Versandart</label>
+                    <select id="delivery-method">
+                        <option value="in_person">Vor Ort</option>
+                        <option value="mail">Per Post</option>
+                        <option value="email">Per E-Mail</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="voucher-notes">Notizen (optional)</label>
+                    <textarea 
+                        id="voucher-notes" 
+                        rows="3" 
+                        placeholder="z.B. Geschenk für Geburtstag"
+                    ></textarea>
+                </div>
+                
+                <button type="submit" class="create-btn">Gutschein erstellen</button>
+            </form>
+        </div>
+    `;
+    
+    // Fokus auf Wert-Feld
+    document.getElementById('voucher-value').focus();
+}
+
+// Gutschein erstellen - Handler
+async function handleCreateVoucher(event) {
+    event.preventDefault();
+    
+    // Werte auslesen
+    const value = parseFloat(document.getElementById('voucher-value').value);
+    const buyerName = document.getElementById('buyer-name').value.trim();
+    const buyerEmail = document.getElementById('buyer-email').value.trim();
+    const deliveryMethod = document.getElementById('delivery-method').value;
+    const notes = document.getElementById('voucher-notes').value.trim();
+    
+    // Validierung
+    if (!value || value <= 0) {
+        alert('Bitte gültigen Wert eingeben!');
+        return;
+    }
+    
+    // Button deaktivieren
+    const submitBtn = document.querySelector('.create-btn');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Wird erstellt...';
+    
+    // Gutschein erstellen
+    const result = await createVoucher(value, buyerName, buyerEmail, notes, deliveryMethod);
+    
+    if (result.success) {
+        // Erfolg - zeige Bestätigung
+        showVoucherCreated(result.voucher);
+    } else {
+        alert('Fehler: ' + result.error);
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Gutschein erstellen';
+    }
+}
+
+// Bestätigung nach Erstellung
+function showVoucherCreated(voucher) {
+    const app = document.getElementById('app');
+    
+    const expiryDate = new Date(voucher.expires_at).toLocaleDateString('de-DE');
+    
+    app.innerHTML = `
+        <div class="created-page">
+            <div class="success-header">
+                <h2>✅ Gutschein erstellt!</h2>
+            </div>
+            
+            <div class="voucher-summary">
+                <div class="summary-row">
+                    <span class="summary-label">Code:</span>
+                    <span class="summary-value code-highlight">${voucher.code}</span>
+                </div>
+                
+                <div class="summary-row">
+                    <span class="summary-label">Wert:</span>
+                    <span class="summary-value">${parseFloat(voucher.original_value).toFixed(2)} €</span>
+                </div>
+                
+                <div class="summary-row">
+                    <span class="summary-label">Gültig bis:</span>
+                    <span class="summary-value">${expiryDate}</span>
+                </div>
+                
+                ${voucher.buyer_name ? `
+                <div class="summary-row">
+                    <span class="summary-label">Käufer:</span>
+                    <span class="summary-value">${voucher.buyer_name}</span>
+                </div>
+                ` : ''}
+                
+                <div class="qr-container" id="qr-code">
+                    <!-- QR-Code wird hier generiert -->
+                </div>
+            </div>
+            
+            <div class="action-buttons">
+                <button onclick="showCreateVoucher()">+ Weiteren Gutschein</button>
+                <button onclick="showDashboard()">← Zum Dashboard</button>
+            </div>
+        </div>
+    `;
+    
+    // QR-Code generieren
+    generateQRCode(voucher.code);
+}
+
+// QR-Code generieren
+function generateQRCode(code) {
+    const qrContainer = document.getElementById('qr-code');
+    
+    if (typeof QRCode !== 'undefined') {
+        qrContainer.innerHTML = '';
+        new QRCode(qrContainer, {
+            text: code,
+            width: 150,
+            height: 150,
+            colorDark: '#8B5A3C',
+            colorLight: '#ffffff'
+        });
+    } else {
+        qrContainer.innerHTML = '<p>QR-Code nicht verfügbar</p>';
+    }
 }
 
 // Gutschein einlösen - Suchseite

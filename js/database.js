@@ -194,3 +194,95 @@ async function loadVoucherTransactions(voucherId) {
     
     return data;
 }
+
+// Nächste Gutschein-Nummer holen
+async function getNextVoucherNumber() {
+    console.log('Hole nächste Gutschein-Nummer...');
+    
+    // Aktuelle Nummer lesen
+    const { data, error } = await supabase
+        .from('voucher_counter')
+        .select('current_number')
+        .eq('id', 1)
+        .single();
+    
+    if (error) {
+        console.error('Fehler beim Lesen des Counters:', error.message);
+        return null;
+    }
+    
+    const nextNumber = data.current_number + 1;
+    
+    // Counter erhöhen
+    const { error: updateError } = await supabase
+        .from('voucher_counter')
+        .update({ current_number: nextNumber })
+        .eq('id', 1);
+    
+    if (updateError) {
+        console.error('Fehler beim Aktualisieren des Counters:', updateError.message);
+        return null;
+    }
+    
+    console.log('Nächste Nummer:', nextNumber);
+    return nextNumber;
+}
+
+// Gutschein-Code generieren (GIFT-0001 Format)
+function generateVoucherCode(number) {
+    return 'GIFT-' + String(number).padStart(4, '0');
+}
+
+// Neuen Gutschein erstellen
+async function createVoucher(value, buyerName, buyerEmail, notes, deliveryMethod) {
+    console.log('Erstelle neuen Gutschein...');
+    
+    // Nächste Nummer holen
+    const nextNumber = await getNextVoucherNumber();
+    if (!nextNumber) {
+        return { success: false, error: 'Konnte keine Nummer generieren' };
+    }
+    
+    // Code generieren
+    const code = generateVoucherCode(nextNumber);
+    
+    // Ablaufdatum: 2 Jahre ab heute
+    const expiryDate = new Date();
+    expiryDate.setFullYear(expiryDate.getFullYear() + 2);
+    
+    // Gutschein speichern
+    const { data, error } = await supabase
+        .from('vouchers')
+        .insert({
+            code: code,
+            original_value: value,
+            remaining_value: value,
+            status: 'active',
+            expires_at: expiryDate.toISOString(),
+            buyer_name: buyerName || null,
+            buyer_email: buyerEmail || null,
+            notes: notes || null,
+            delivery_method: deliveryMethod || null
+        })
+        .select()
+        .single();
+    
+    if (error) {
+        console.error('Fehler beim Erstellen:', error.message);
+        return { success: false, error: error.message };
+    }
+    
+    // Transaktion loggen
+    await supabase
+        .from('voucher_transactions')
+        .insert({
+            voucher_id: data.id,
+            action: 'created',
+            amount: value,
+            remaining_value_after: value,
+            notes: 'Gutschein erstellt'
+        });
+    
+    console.log('Gutschein erstellt:', code);
+    return { success: true, voucher: data };
+}

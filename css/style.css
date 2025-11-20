@@ -627,3 +627,114 @@ button:active {
         font-size: 16px; /* Verhindert Zoom auf iOS */
     }
 }
+
+/* ====================================
+   GUTSCHEIN ERSTELLEN
+   ==================================== */
+
+.create-page h2 {
+    color: #8B5A3C;
+}
+
+#create-form {
+    margin-top: 20px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+    color: #6B7C59;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 12px;
+    font-size: 16px;
+    border: 2px solid #E8D9B6;
+    border-radius: 8px;
+    background-color: white;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: #A67C52;
+}
+
+.create-btn {
+    width: 100%;
+    padding: 15px;
+    font-size: 18px;
+    background-color: #6B7C59;
+}
+
+.create-btn:hover {
+    background-color: #5a6b4a;
+}
+
+.create-btn:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+/* Bestätigungs-Seite */
+.created-page {
+    text-align: center;
+}
+
+.success-header h2 {
+    color: #6B7C59;
+    margin-bottom: 20px;
+}
+
+.voucher-summary {
+    background-color: white;
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid #E8D9B6;
+}
+
+.summary-row:last-of-type {
+    border-bottom: none;
+}
+
+.summary-label {
+    color: #6B7C59;
+}
+
+.summary-value {
+    font-weight: bold;
+    color: #333;
+}
+
+.code-highlight {
+    font-size: 20px;
+    color: #8B5A3C;
+}
+
+.qr-container {
+    margin-top: 20px;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+}
+
+.created-page .action-buttons {
+    flex-direction: column;
+}
