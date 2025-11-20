@@ -502,3 +502,128 @@ button:active {
         min-width: auto;
     }
 }
+
+/* ====================================
+   RESPONSIVE DESIGN - MOBILE FIRST
+   ==================================== */
+
+/* Kleine Handys (bis 400px) */
+@media (max-width: 400px) {
+    .container {
+        padding: 8px;
+    }
+    
+    header {
+        padding: 15px;
+    }
+    
+    header h1 {
+        font-size: 18px;
+    }
+    
+    main {
+        padding: 15px;
+    }
+    
+    button {
+        padding: 10px 16px;
+        font-size: 14px;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+    }
+    
+    .action-buttons button {
+        width: 100%;
+    }
+    
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .stat-value {
+        font-size: 24px;
+    }
+    
+    .card-code {
+        font-size: 14px;
+    }
+    
+    .card-header {
+        padding: 12px 15px;
+    }
+    
+    .list-header {
+        flex-direction: column;
+        gap: 10px;
+        align-items: flex-start;
+    }
+    
+    .list-header button {
+        width: 100%;
+    }
+}
+
+/* Normale Handys (401px - 600px) */
+@media (min-width: 401px) and (max-width: 600px) {
+    .container {
+        padding: 10px;
+    }
+    
+    header h1 {
+        font-size: 20px;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+    }
+    
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* Tablets (601px - 900px) */
+@media (min-width: 601px) and (max-width: 900px) {
+    .container {
+        padding: 15px;
+    }
+    
+    .action-buttons button {
+        flex: 1 1 45%;
+    }
+    
+    .stats-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+/* Desktop (über 900px) */
+@media (min-width: 901px) {
+    .container {
+        padding: 20px;
+        max-width: 1000px;
+    }
+    
+    .voucher-cards {
+        max-width: 800px;
+    }
+}
+
+/* Touch-Optimierung */
+@media (hover: none) and (pointer: coarse) {
+    button {
+        min-height: 44px;
+        min-width: 44px;
+    }
+    
+    .voucher-card {
+        min-height: 60px;
+    }
+    
+    input {
+        min-height: 44px;
+        font-size: 16px; /* Verhindert Zoom auf iOS */
+    }
+}
