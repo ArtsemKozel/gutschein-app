@@ -26,41 +26,20 @@ document.addEventListener('DOMContentLoaded', async function() {
 
 // Dashboard anzeigen
 async function showDashboard() {
-    const app = document.getElementById('app');
+    console.log('Zeige Dashboard...');
     
-    // Statistiken laden
-    const stats = await loadStats();
+    // Admin-Button anpassen
+    updateAdminButton();
     
     app.innerHTML = `
         <div class="dashboard">
-            <h2>Dashboard</h2>
+            <h2>🎟️ Willkommen</h2>
             
             <div class="action-buttons">
-                <button onclick="showCreateVoucher()">+ Neuer Gutschein</button>
-                <button onclick="showRedeemVoucher()">🔍 Gutschein einlösen</button>
-                <button onclick="showVoucherList()">📋 Alle Gutscheine</button>
+                <button onclick="showCreateVoucher()">➕ Neuer Gutschein</button>
+                <button onclick="showRedeemVoucher()">💰 Einlösen</button>
             </div>
             
-            <div class="stats">
-                <h3>📊 Statistiken</h3>
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <span class="stat-label">Aktiv</span>
-                        <span class="stat-value">${stats ? stats.active : 0}</span>
-                        <span class="stat-amount">${stats ? stats.activeValue.toFixed(2) : '0.00'} €</span>
-                    </div>
-                    <div class="stat-card">
-                        <span class="stat-label">Eingelöst</span>
-                        <span class="stat-value">${stats ? stats.redeemed : 0}</span>
-                        <span class="stat-amount">${stats ? stats.redeemedValue.toFixed(2) : '0.00'} €</span>
-                    </div>
-                    <div class="stat-card">
-                        <span class="stat-label">Abgelaufen</span>
-                        <span class="stat-value">${stats ? stats.expired : 0}</span>
-                        <span class="stat-amount">${stats ? stats.expiredValue.toFixed(2) : '0.00'} €</span>
-                    </div>
-                </div>
-            </div>
         </div>
     `;
 }
@@ -445,7 +424,7 @@ async function showVoucherList() {
         <div class="voucher-list">
             <div class="list-header">
                 <h2>📋 Alle Gutscheine</h2>
-                <button onclick="showDashboard()">← Zurück</button>
+                <button onclick="goBack()">← Zurück</button>
             </div>
             <p>Lädt Gutscheine...</p>
         </div>
@@ -498,7 +477,7 @@ async function showVoucherList() {
         <div class="voucher-list">
             <div class="list-header">
                 <h2>📋 Alle Gutscheine</h2>
-                <button onclick="showDashboard()">← Zurück</button>
+                <button onclick="goBack()">← Zurück</button>
             </div>
             <div class="voucher-cards">
                 ${cardsHTML}
@@ -612,4 +591,424 @@ async function toggleVoucherCard(cardElement, voucherId) {
         </div>
         ${historyHTML}
     `;
+}
+
+// Statistik-Sektion auf/zuklappen
+function toggleStatsSection(sectionId) {
+    const section = document.getElementById(sectionId);
+    if (section) {
+        section.classList.toggle('expanded');
+    }
+}
+
+// CSV-Export für Statistiken (flexibel mit Filter)
+function exportStatsToCSV(period = 'all') {
+    // Zeitstempel für Dateinamen
+    const now = new Date();
+    const timestamp = now.toISOString().split('T')[0]; // YYYY-MM-DD
+    
+    // CSV-Header
+    let csv = 'Statistik,Anzahl,Wert (EUR)\n';
+    
+    // Daten aus den aktuell angezeigten Statistiken holen
+    loadStatsFiltered(period).then(stats => {
+        // Status-Übersicht
+        csv += `Aktive Gutscheine,${stats.active},${stats.activeValue.toFixed(2)}\n`;
+        csv += `Eingelöste Gutscheine,${stats.redeemed},${stats.redeemedValue.toFixed(2)}\n`;
+        csv += `Abgelaufene Gutscheine,${stats.expired},${stats.expiredValue.toFixed(2)}\n`;
+        csv += '\n';
+        
+        // Kennzahlen
+        csv += `Gesamt verkauft,${stats.total},${stats.totalValue.toFixed(2)}\n`;
+        csv += `Durchschnittswert pro Gutschein,-,${stats.averageValue.toFixed(2)}\n`;
+        csv += `Einlösungsrate (%),${stats.redemptionRate.toFixed(1)},-\n`;
+        csv += '\n';
+        
+        // Versandarten
+        csv += 'Versandart,Anzahl,-\n';
+        csv += `Vor Ort,${stats.deliveryMethods.in_person},-\n`;
+        csv += `Per Post,${stats.deliveryMethods.mail},-\n`;
+        csv += `Per E-Mail,${stats.deliveryMethods.email},-\n`;
+        
+        // Zeitraum-Text für Dateinamen
+        let periodText = 'gesamt';
+        if (period === '7days') periodText = '7-tage';
+        else if (period === 'month') periodText = 'monat';
+        else if (period === 'year') periodText = 'jahr';
+        
+        // CSV-Download auslösen
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        
+        link.setAttribute('href', url);
+        link.setAttribute('download', `gutschein-statistiken-${periodText}-${timestamp}.csv`);
+        link.style.visibility = 'hidden';
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        console.log('CSV-Export erfolgreich:', periodText);
+    });
+}
+
+// ====================================
+// ADMIN-SYSTEM
+// ====================================
+
+// Admin-Passwort (später in Supabase auslagern)
+const ADMIN_PASSWORD = '0103'; // ÄNDERE DIES!
+
+// Admin-Status prüfen
+function isAdmin() {
+    return sessionStorage.getItem('isAdmin') === 'true';
+}
+
+// Intelligente Zurück-Funktion
+function goBack() {
+    if (isAdmin()) {
+        showAdminDashboard();
+    } else {
+        showDashboard();
+    }
+}
+
+// Admin-Button Text aktualisieren
+function updateAdminButton() {
+    const btn = document.getElementById('admin-btn');
+    if (btn) {
+        if (isAdmin()) {
+            btn.innerHTML = '👤 ADMIN';
+            btn.style.backgroundColor = '#A67C52';
+        } else {
+            btn.innerHTML = '🔐 Admin';
+            btn.style.backgroundColor = '#6B7C59';
+        }
+    }
+}
+
+// Admin-Button Klick
+function handleAdminButton() {
+    if (isAdmin()) {
+        // Wenn schon eingeloggt → Admin-Dashboard anzeigen
+        showAdminDashboard();
+    } else {
+        // Wenn nicht eingeloggt → Login anzeigen
+        showAdminLogin();
+    }
+}
+
+// Admin-Login anzeigen
+function showAdminLogin() {
+    app.innerHTML = `
+        <div class="login-page">
+            <h2>🔐 Admin-Login</h2>
+            <div class="login-box">
+                <div id="login-error" style="display: none;" class="login-error">
+                    ❌ Falsches Passwort!
+                </div>
+                <input 
+                    type="password" 
+                    id="admin-password" 
+                    placeholder="Passwort eingeben"
+                    onkeypress="if(event.key==='Enter') checkAdminPassword()"
+                >
+                <button onclick="checkAdminPassword()">🔓 Anmelden</button>
+            </div>
+            <div style="margin-top: 20px;">
+                <button onclick="showDashboard()" style="background-color: #6B7C59;">
+                    ← Abbrechen
+                </button>
+            </div>
+        </div>
+    `;
+    
+    // Fokus auf Input-Feld
+    setTimeout(() => {
+        document.getElementById('admin-password').focus();
+    }, 100);
+}
+
+// Passwort prüfen
+function checkAdminPassword() {
+    const input = document.getElementById('admin-password').value;
+    const errorDiv = document.getElementById('login-error');
+    
+    if (input === ADMIN_PASSWORD) {
+        // Login erfolgreich
+        sessionStorage.setItem('isAdmin', 'true');
+        showAdminDashboard();
+    } else {
+        // Falsches Passwort
+        errorDiv.style.display = 'block';
+        document.getElementById('admin-password').value = '';
+        document.getElementById('admin-password').focus();
+    }
+}
+
+// Admin ausloggen
+function adminLogout() {
+    sessionStorage.removeItem('isAdmin');
+    showDashboard();
+}
+
+// Admin-Dashboard anzeigen
+async function showAdminDashboard(period = 'all') {
+    if (!isAdmin()) {
+        showAdminLogin();
+        return;
+    }
+    
+    console.log('Zeige Admin-Dashboard...');
+    
+    // Admin-Button aktualisieren
+    updateAdminButton();
+    
+    const stats = await loadStatsFiltered(period);
+    
+    app.innerHTML = `
+        <div class="dashboard">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2>📊 Admin-Dashboard <span class="admin-badge">ADMIN</span></h2>
+                <button onclick="adminLogout()" style="background-color: #8B5A3C;">
+                    🚪 Ausloggen
+                </button>
+            </div>
+            
+            <div class="action-buttons">
+                <button onclick="showVoucherList()">📋 Alle Gutscheine</button>
+            </div>
+            
+            <!-- NEU: ZEITRAUM-FILTER -->
+            <div class="filter-buttons">
+                <button class="${period === '7days' ? 'active' : ''}" onclick="showAdminDashboard('7days')">
+                    📅 Letzte 7 Tage
+                </button>
+                <button class="${period === 'month' ? 'active' : ''}" onclick="showAdminDashboard('month')">
+                    📅 Dieser Monat
+                </button>
+                <button class="${period === 'year' ? 'active' : ''}" onclick="showAdminDashboard('year')">
+                    📅 Dieses Jahr
+                </button>
+                <button class="${period === 'all' ? 'active' : ''}" onclick="showAdminDashboard('all')">
+                    📅 Gesamt
+                </button>
+            </div>
+            
+            <!-- KLAPPBAR: STATUS-ÜBERSICHT -->
+            <div class="stats-section" id="stats-status" onclick="toggleStatsSection('stats-status')">
+                <div class="stats-header">
+                    <div class="stats-title">
+                        <span class="stats-arrow">▶</span>
+                        <span>Status-Übersicht</span>
+                    </div>
+                </div>
+                <div class="stats-content">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-label">Aktiv</div>
+                            <div class="stat-value">${stats.active}</div>
+                            <div class="stat-amount">${stats.activeValue.toFixed(2)} €</div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-label">Eingelöst</div>
+                            <div class="stat-value">${stats.redeemed}</div>
+                            <div class="stat-amount">${stats.redeemedValue.toFixed(2)} €</div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-label">Abgelaufen</div>
+                            <div class="stat-value">${stats.expired}</div>
+                            <div class="stat-amount">${stats.expiredValue.toFixed(2)} €</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- KLAPPBAR: KENNZAHLEN -->
+            <div class="stats-section" id="stats-metrics" onclick="toggleStatsSection('stats-metrics')">
+                <div class="stats-header">
+                    <div class="stats-title">
+                        <span class="stats-arrow">▶</span>
+                        <span>Kennzahlen</span>
+                    </div>
+                </div>
+                <div class="stats-content">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-label">Gesamt verkauft</div>
+                            <div class="stat-value">${stats.total}</div>
+                            <div class="stat-amount">${stats.totalValue.toFixed(2)} €</div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-label">Durchschnittswert</div>
+                            <div class="stat-value">${stats.averageValue.toFixed(2)} €</div>
+                            <div class="stat-amount">pro Gutschein</div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-label">Einlösungsrate</div>
+                            <div class="stat-value">${stats.redemptionRate.toFixed(1)}%</div>
+                            <div class="stat-amount">${stats.redeemed} von ${stats.total}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- KLAPPBAR: VERSANDARTEN -->
+            <div class="stats-section" id="stats-delivery" onclick="toggleStatsSection('stats-delivery')">
+                <div class="stats-header">
+                    <div class="stats-title">
+                        <span class="stats-arrow">▶</span>
+                        <span>Versandarten</span>
+                    </div>
+                </div>
+                <div class="stats-content">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-label">Vor Ort</div>
+                            <div class="stat-value">${stats.deliveryMethods.in_person}</div>
+                            <div class="stat-amount">verkauft</div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-label">Per Post</div>
+                            <div class="stat-value">${stats.deliveryMethods.mail}</div>
+                            <div class="stat-amount">verkauft</div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-label">Per E-Mail</div>
+                            <div class="stat-value">${stats.deliveryMethods.email}</div>
+                            <div class="stat-amount">verkauft</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- KLAPPBAR: DIAGRAMME -->
+            <div class="stats-section" id="stats-charts" onclick="toggleStatsSection('stats-charts')">
+                <div class="stats-header">
+                    <div class="stats-title">
+                        <span class="stats-arrow">▶</span>
+                        <span>Visuelle Diagramme</span>
+                    </div>
+                </div>
+                <div class="stats-content">
+                    <div class="charts-grid">
+                        <div class="chart-container">
+                            <h4>📊 Status-Verteilung</h4>
+                            <div class="chart-wrapper">
+                                <canvas id="statusPieChart"></canvas>
+                            </div>
+                        </div>
+            
+                        <div class="chart-container">
+                            <h4>📊 Versandarten</h4>
+                            <div class="chart-wrapper">
+                                <canvas id="deliveryBarChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- CSV-EXPORT -->
+                <div class="export-button">
+                    <button onclick="exportStatsToCSV('${period}')">📥 Statistiken als CSV exportieren</button>
+                </div>
+        </div>
+   `;
+    
+    // Diagramme rendern
+    renderCharts(stats);
+}
+
+// Diagramme rendern
+function renderCharts(stats) {
+    // Warte kurz, damit DOM geladen ist
+    setTimeout(() => {
+        // Alte Chart-Instanzen zerstören (falls vorhanden)
+        Chart.getChart('statusPieChart')?.destroy();
+        Chart.getChart('deliveryBarChart')?.destroy();
+        
+        // TORTENDIAGRAMM: Status-Verteilung
+        const pieCanvas = document.getElementById('statusPieChart');
+        if (pieCanvas) {
+            new Chart(pieCanvas, {
+                type: 'pie',
+                data: {
+                    labels: ['Aktiv', 'Eingelöst', 'Abgelaufen'],
+                    datasets: [{
+                        data: [stats.active, stats.redeemed, stats.expired],
+                        backgroundColor: [
+                            '#6B7C59', // Aktiv (Olivgrün)
+                            '#A67C52', // Eingelöst (Braun)
+                            '#8B5A3C'  // Abgelaufen (Dunkelbraun)
+                        ],
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 15,
+                                font: {
+                                    size: 14
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // BALKENDIAGRAMM: Versandarten
+        const barCanvas = document.getElementById('deliveryBarChart');
+        if (barCanvas) {
+            new Chart(barCanvas, {
+                type: 'bar',
+                data: {
+                    labels: ['Vor Ort', 'Per Post', 'Per E-Mail'],
+                    datasets: [{
+                        label: 'Anzahl Gutscheine',
+                        data: [
+                            stats.deliveryMethods.in_person,
+                            stats.deliveryMethods.mail,
+                            stats.deliveryMethods.email
+                        ],
+                        backgroundColor: [
+                            '#6B7C59', // Olivgrün
+                            '#A67C52', // Braun
+                            '#D7C4A3'  // Beige
+                        ],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+    }, 100);
 }

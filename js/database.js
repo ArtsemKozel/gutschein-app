@@ -51,16 +51,17 @@ async function loadAllVouchers() {
 async function loadStats() {
     console.log('Lade Statistiken...');
     
+    // ALLE Felder abrufen (auch delivery_method)
     const { data, error } = await supabase
         .from('vouchers')
-        .select('status, original_value, remaining_value');
+        .select('*');
     
     if (error) {
         console.error('Fehler bei Statistiken:', error.message);
         return null;
     }
     
-    // Statistiken berechnen
+    // Basis-Statistiken berechnen
     const stats = {
         total: data.length,
         active: 0,
@@ -83,6 +84,30 @@ async function loadStats() {
             stats.expiredValue += parseFloat(voucher.original_value);
         }
     });
+    
+    // NEU: Erweiterte Statistiken berechnen
+    const totalValue = data.reduce((sum, v) => sum + parseFloat(v.original_value), 0);
+    const averageValue = data.length > 0 ? totalValue / data.length : 0;
+    const redemptionRate = data.length > 0 ? (stats.redeemed / data.length) * 100 : 0;
+    
+    // NEU: Versandarten zählen
+    const deliveryMethods = {
+        in_person: 0,
+        mail: 0,
+        email: 0
+    };
+    
+    data.forEach(voucher => {
+        if (voucher.delivery_method === 'in_person') deliveryMethods.in_person++;
+        else if (voucher.delivery_method === 'mail') deliveryMethods.mail++;
+        else if (voucher.delivery_method === 'email') deliveryMethods.email++;
+    });
+    
+    // Erweiterte Stats hinzufügen
+    stats.totalValue = totalValue;
+    stats.averageValue = averageValue;
+    stats.redemptionRate = redemptionRate;
+    stats.deliveryMethods = deliveryMethods;
     
     console.log('Statistiken:', stats);
     return stats;
@@ -285,4 +310,91 @@ async function createVoucher(value, buyerName, buyerEmail, notes, deliveryMethod
     
     console.log('Gutschein erstellt:', code);
     return { success: true, voucher: data };
+}
+
+// Statistiken mit Zeitraum-Filter laden
+async function loadStatsFiltered(period = 'all') {
+    console.log('Lade gefilterte Statistiken:', period);
+    
+    // ALLE Gutscheine abrufen
+    const { data, error } = await supabase
+        .from('vouchers')
+        .select('*');
+    
+    if (error) {
+        console.error('Fehler bei Statistiken:', error.message);
+        return null;
+    }
+    
+    // Zeitraum berechnen
+    const now = new Date();
+    let startDate = null;
+    
+    if (period === '7days') {
+        startDate = new Date(now);
+        startDate.setDate(now.getDate() - 7);
+    } else if (period === 'month') {
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+    } else if (period === 'year') {
+        startDate = new Date(now.getFullYear(), 0, 1);
+    }
+    // 'all' = kein Filter (startDate bleibt null)
+    
+    // Daten filtern nach created_at
+    let filteredData = data;
+    if (startDate) {
+        filteredData = data.filter(v => new Date(v.created_at) >= startDate);
+    }
+    
+    // Statistiken berechnen (wie vorher)
+    const stats = {
+        total: filteredData.length,
+        active: 0,
+        activeValue: 0,
+        redeemed: 0,
+        redeemedValue: 0,
+        expired: 0,
+        expiredValue: 0
+    };
+    
+    filteredData.forEach(voucher => {
+        if (voucher.status === 'active') {
+            stats.active++;
+            stats.activeValue += parseFloat(voucher.remaining_value);
+        } else if (voucher.status === 'redeemed') {
+            stats.redeemed++;
+            stats.redeemedValue += parseFloat(voucher.original_value);
+        } else if (voucher.status === 'expired') {
+            stats.expired++;
+            stats.expiredValue += parseFloat(voucher.original_value);
+        }
+    });
+    
+    // Erweiterte Statistiken
+    const totalValue = filteredData.reduce((sum, v) => sum + parseFloat(v.original_value), 0);
+    const averageValue = filteredData.length > 0 ? totalValue / filteredData.length : 0;
+    const redemptionRate = filteredData.length > 0 ? (stats.redeemed / filteredData.length) * 100 : 0;
+    
+    // Versandarten zählen
+    const deliveryMethods = {
+        in_person: 0,
+        mail: 0,
+        email: 0
+    };
+    
+    filteredData.forEach(voucher => {
+        if (voucher.delivery_method === 'in_person') deliveryMethods.in_person++;
+        else if (voucher.delivery_method === 'mail') deliveryMethods.mail++;
+        else if (voucher.delivery_method === 'email') deliveryMethods.email++;
+    });
+    
+    // Erweiterte Stats hinzufügen
+    stats.totalValue = totalValue;
+    stats.averageValue = averageValue;
+    stats.redemptionRate = redemptionRate;
+    stats.deliveryMethods = deliveryMethods;
+    stats.period = period; // Aktueller Filter merken
+    
+    console.log('Gefilterte Statistiken:', stats);
+    return stats;
 }

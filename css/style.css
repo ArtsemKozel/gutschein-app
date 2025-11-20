@@ -738,3 +738,197 @@ button:active {
 .created-page .action-buttons {
     flex-direction: column;
 }
+
+/* ====================================
+   KLAPPBARE STATISTIK-SEKTIONEN
+   ==================================== */
+
+.stats-section {
+    background-color: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 15px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.stats-section:hover {
+    border-color: #D7C4A3;
+}
+
+.stats-section.expanded {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.stats-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+}
+
+.stats-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 18px;
+    font-weight: bold;
+    color: #8B5A3C;
+}
+
+.stats-arrow {
+    color: #8B5A3C;
+    font-size: 12px;
+    transition: transform 0.3s ease;
+}
+
+.stats-section.expanded .stats-arrow {
+    transform: rotate(90deg);
+}
+
+.stats-content {
+    display: none;
+    padding: 0 20px 20px 20px;
+    border-top: 1px solid #E8D9B6;
+}
+
+.stats-section.expanded .stats-content {
+    display: block;
+}
+
+/* Stats Grid bleibt wie vorher, nur innerhalb der Content-Bereich */
+.stats-content .stats-grid {
+    margin-top: 15px;
+}
+
+/* ====================================
+   ZEITRAUM-FILTER
+   ==================================== */
+
+.filter-buttons {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.filter-buttons button {
+    flex: 1;
+    min-width: 120px;
+    padding: 10px 16px;
+    font-size: 14px;
+    background-color: #D7C4A3;
+    color: #333;
+}
+
+.filter-buttons button:hover {
+    background-color: #C4B090;
+}
+
+.filter-buttons button.active {
+    background-color: #A67C52;
+    color: white;
+    font-weight: bold;
+}
+
+@media (max-width: 600px) {
+    .filter-buttons {
+        flex-direction: column;
+    }
+    
+    .filter-buttons button {
+        width: 100%;
+    }
+}
+
+/* ====================================
+   ADMIN LOGIN
+   ==================================== */
+
+.login-page {
+    max-width: 400px;
+    margin: 50px auto;
+    text-align: center;
+}
+
+.login-page h2 {
+    color: #8B5A3C;
+    margin-bottom: 30px;
+}
+
+.login-box {
+    background-color: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.login-box input {
+    width: 100%;
+    padding: 15px;
+    font-size: 18px;
+    border: 2px solid #E8D9B6;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    box-sizing: border-box;
+}
+
+.login-box input:focus {
+    outline: none;
+    border-color: #A67C52;
+}
+
+.login-box button {
+    width: 100%;
+    padding: 15px;
+    font-size: 18px;
+}
+
+.login-error {
+    background-color: #f8d7da;
+    color: #721c24;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+/* ====================================
+   DIAGRAMME
+   ==================================== */
+
+.charts-section {
+    margin-top: 30px;
+}
+
+.charts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.chart-container {
+    background-color: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.chart-container h4 {
+    color: #8B5A3C;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.chart-wrapper {
+    position: relative;
+    height: 300px;
+}
+
+@media (max-width: 768px) {
+    .charts-grid {
+        grid-template-columns: 1fr;
+    }
+}
