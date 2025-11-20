@@ -1,0 +1,504 @@
+/* Reset & Basis */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+    background-color: #A8B796;
+    color: #333;
+    line-height: 1.6;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Header */
+header {
+    background-color: #F6EAD2;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    margin-bottom: 30px;
+}
+
+header h1 {
+    color: #8B5A3C;
+    font-size: 28px;
+}
+
+/* Main Content */
+main {
+    background-color: #F6EAD2;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    min-height: 400px;
+}
+
+/* Buttons */
+button {
+    background-color: #A67C52;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+button:hover {
+    background-color: #8B5A3C;
+}
+
+button:active {
+    transform: scale(0.98);
+}
+
+/* Dashboard */
+.dashboard h2 {
+    color: #8B5A3C;
+    margin-bottom: 20px;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+}
+
+.action-buttons button {
+    flex: 1;
+    min-width: 150px;
+}
+
+/* Statistiken */
+.stats {
+    margin-top: 20px;
+}
+
+.stats h3 {
+    color: #6B7C59;
+    margin-bottom: 15px;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+}
+
+.stat-card {
+    background-color: #D7C4A3;
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.stat-label {
+    font-size: 14px;
+    color: #6B7C59;
+    font-weight: bold;
+}
+
+.stat-value {
+    font-size: 32px;
+    font-weight: bold;
+    color: #8B5A3C;
+}
+
+.stat-amount {
+    font-size: 14px;
+    color: #A67C52;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .container {
+        padding: 10px;
+    }
+    
+    header h1 {
+        font-size: 22px;
+    }
+    
+    main {
+        padding: 20px;
+    }
+}
+
+/* ====================================
+   GUTSCHEIN-LISTE
+   ==================================== */
+
+.voucher-list h2 {
+    color: #8B5A3C;
+    margin-bottom: 20px;
+}
+
+.list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.list-header button {
+    background-color: #6B7C59;
+}
+
+.list-header button:hover {
+    background-color: #5a6b4a;
+}
+
+/* Tabelle */
+.voucher-table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.voucher-table th,
+.voucher-table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #E8D9B6;
+}
+
+.voucher-table th {
+    background-color: #D7C4A3;
+    color: #8B5A3C;
+    font-weight: bold;
+}
+
+.voucher-table tr:hover {
+    background-color: #F6EAD2;
+}
+
+/* Status-Badges */
+.status-active {
+    background-color: #6B7C59;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+}
+
+.status-redeemed {
+    background-color: #A67C52;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+}
+
+.status-expired {
+    background-color: #8B5A3C;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+}
+
+/* ====================================
+   EINLÖSEN-SEITE
+   ==================================== */
+
+.redeem-page h2 {
+    color: #8B5A3C;
+}
+
+/* Suchbox */
+.search-box {
+    background-color: #D7C4A3;
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+
+.search-box label {
+    display: block;
+    margin-bottom: 10px;
+    font-weight: bold;
+    color: #6B7C59;
+}
+
+.search-box input {
+    width: 100%;
+    padding: 12px;
+    font-size: 18px;
+    border: 2px solid #E8D9B6;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    text-transform: uppercase;
+}
+
+.search-box input:focus {
+    outline: none;
+    border-color: #A67C52;
+}
+
+.search-box button {
+    width: 100%;
+}
+
+/* Nicht gefunden */
+.not-found {
+    background-color: #f8d7da;
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+    color: #721c24;
+}
+
+/* Gutschein-Details */
+.voucher-details {
+    background-color: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.voucher-details h3 {
+    color: #8B5A3C;
+    margin-bottom: 20px;
+}
+
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid #E8D9B6;
+}
+
+.detail-label {
+    color: #6B7C59;
+}
+
+.detail-value {
+    color: #333;
+}
+
+/* Einlösen-Bereich */
+.redeem-section {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 2px solid #E8D9B6;
+}
+
+.redeem-section h4 {
+    color: #6B7C59;
+    margin-bottom: 15px;
+}
+
+.redeem-input {
+    margin-bottom: 15px;
+}
+
+.redeem-input label {
+    display: block;
+    margin-bottom: 5px;
+    color: #6B7C59;
+}
+
+.redeem-input input {
+    width: 100%;
+    padding: 10px;
+    font-size: 18px;
+    border: 2px solid #E8D9B6;
+    border-radius: 8px;
+}
+
+.redeem-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.redeem-buttons button.secondary {
+    background-color: #6B7C59;
+}
+
+.redeem-buttons button.secondary:hover {
+    background-color: #5a6b4a;
+}
+
+/* Kann nicht einlösen */
+.cannot-redeem {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: #fff3cd;
+    border-radius: 8px;
+    color: #856404;
+    text-align: center;
+}
+
+/* ====================================
+   KLAPPBARE GUTSCHEIN-KARTEN
+   ==================================== */
+
+.voucher-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.voucher-card {
+    background-color: #F6EAD2;
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.voucher-card:hover {
+    border-color: #D7C4A3;
+}
+
+.voucher-card.expanded {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+}
+
+.card-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.card-arrow {
+    color: #8B5A3C;
+    font-size: 12px;
+}
+
+.card-code {
+    font-weight: bold;
+    font-size: 18px;
+    color: #333;
+}
+
+.card-details {
+    padding: 0 20px 20px 20px;
+    margin-left: 24px;
+    border-top: 1px solid #E8D9B6;
+}
+
+/* Detail-Grid */
+.detail-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+    margin-top: 15px;
+    margin-bottom: 15px;
+}
+
+.detail-item {
+    display: flex;
+    gap: 8px;
+}
+
+.detail-item .label {
+    font-size: 14px;
+    color: #6B7C59;
+    font-weight: bold;
+    min-width: 100px;
+}
+
+.detail-item .value {
+    font-size: 14px;
+    color: #333;
+}
+
+/* Status-Badges in Karten */
+.card-header .status-active,
+.card-header .status-redeemed,
+.card-header .status-expired {
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+/* Transaktions-Historie */
+.transaction-history {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #E8D9B6;
+}
+
+.transaction-history strong {
+    color: #6B7C59;
+    font-size: 14px;
+}
+
+.transaction-history ul {
+    list-style: none;
+    margin-top: 10px;
+}
+
+.transaction-history li {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 14px;
+}
+
+.transaction-history li:last-child {
+    border-bottom: none;
+}
+
+.trans-date {
+    color: #888;
+}
+
+.trans-action {
+    color: #333;
+}
+
+.no-history {
+    color: #888;
+    font-style: italic;
+    font-size: 14px;
+    margin-top: 10px;
+}
+
+/* Responsive */
+@media (max-width: 500px) {
+    .card-header {
+        padding: 15px;
+    }
+    
+    .card-code {
+        font-size: 16px;
+    }
+    
+    .detail-item {
+        flex-direction: column;
+        gap: 2px;
+    }
+    
+    .detail-item .label {
+        min-width: auto;
+    }
+}
