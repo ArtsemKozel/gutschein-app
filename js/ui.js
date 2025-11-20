@@ -453,6 +453,9 @@ async function showVoucherList() {
             } else if (voucher.status === 'expired') {
                 statusText = 'Abgelaufen';
                 statusClass = 'status-expired';
+            } else if (voucher.status === 'cancelled') {
+                statusText = 'Storniert';
+                statusClass = 'status-cancelled';
             }
             
             cardsHTML += `
@@ -590,6 +593,14 @@ async function toggleVoucherCard(cardElement, voucherId) {
             ` : ''}
         </div>
         ${historyHTML}
+        
+        ${isAdmin() && voucher.status !== 'cancelled' ? `
+        <div class="cancel-voucher-section">
+            <button class="cancel-btn" onclick="event.stopPropagation(); confirmCancelVoucher('${voucher.id}', '${voucher.code}')">
+                🗑️ Gutschein stornieren
+            </button>
+        </div>
+        ` : ''}
     `;
 }
 
@@ -1011,4 +1022,26 @@ function renderCharts(stats) {
             });
         }
     }, 100);
+}
+
+// Gutschein stornieren (nur Admin)
+async function confirmCancelVoucher(voucherId, voucherCode) {
+    // Sicherheitsabfrage
+    const reason = prompt(`Gutschein ${voucherCode} wirklich stornieren?\n\nGrund (optional):`);
+    
+    // Abgebrochen
+    if (reason === null) {
+        return;
+    }
+    
+    // Stornieren
+    const result = await cancelVoucher(voucherId, reason || 'Ohne Angabe von Gründen');
+    
+    if (result.success) {
+        alert('✅ Gutschein erfolgreich storniert!');
+        // Gutschein-Liste neu laden
+        showVoucherList();
+    } else {
+        alert('❌ Fehler: ' + result.error);
+    }
 }

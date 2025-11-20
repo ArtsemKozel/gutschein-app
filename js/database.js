@@ -398,3 +398,52 @@ async function loadStatsFiltered(period = 'all') {
     console.log('Gefilterte Statistiken:', stats);
     return stats;
 }
+
+// Gutschein stornieren (nur Admin)
+async function cancelVoucher(voucherId, reason) {
+    console.log('Storniere Gutschein:', voucherId);
+    
+    // Gutschein laden
+    const { data: voucher, error: fetchError } = await supabase
+        .from('vouchers')
+        .select('*')
+        .eq('id', voucherId)
+        .single();
+    
+    if (fetchError) {
+        console.error('Fehler beim Laden:', fetchError.message);
+        return { success: false, error: 'Gutschein nicht gefunden' };
+    }
+    
+    // Prüfen ob bereits storniert
+    if (voucher.status === 'cancelled') {
+        return { success: false, error: 'Bereits storniert' };
+    }
+    
+    // Status auf 'cancelled' setzen
+    const { error: updateError } = await supabase
+        .from('vouchers')
+        .update({
+            status: 'cancelled'
+        })
+        .eq('id', voucherId);
+    
+    if (updateError) {
+        console.error('Fehler beim Stornieren:', updateError.message);
+        return { success: false, error: 'Fehler beim Speichern' };
+    }
+    
+    // Transaktion loggen
+    await supabase
+        .from('voucher_transactions')
+        .insert({
+            voucher_id: voucherId,
+            action: 'cancelled',
+            amount: 0,
+            remaining_value_after: voucher.remaining_value,
+            notes: reason || 'Von Admin storniert'
+        });
+    
+    console.log('Stornierung erfolgreich!');
+    return { success: true };
+}

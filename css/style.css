@@ -189,28 +189,34 @@ button:active {
 }
 
 /* Status-Badges */
+.status-active,
+.status-redeemed,
+.status-expired,
+.status-cancelled {
+    color: white;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: bold;
+    text-align: center;
+    min-width: 100px;
+    display: inline-block;
+}
+
 .status-active {
     background-color: #6B7C59;
-    color: white;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 12px;
 }
 
 .status-redeemed {
     background-color: #A67C52;
-    color: white;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 12px;
 }
 
 .status-expired {
     background-color: #8B5A3C;
-    color: white;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 12px;
+}
+
+.status-cancelled {
+    background-color: #8B5A3C;
 }
 
 /* ====================================
@@ -931,4 +937,28 @@ button:active {
     .charts-grid {
         grid-template-columns: 1fr;
     }
+}
+
+/* ====================================
+   STORNIEREN-BUTTON
+   ==================================== */
+
+.cancel-voucher-section {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 2px solid #E8D9B6;
+}
+
+.cancel-btn {
+    background-color: #8B5A3C;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.cancel-btn:hover {
+    background-color: #6d3d28;
 }
