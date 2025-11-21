@@ -1538,8 +1538,8 @@ async function loadAndDisplayRedemptions() {
         </div>
         
         <!-- TABELLE -->
-        <div style="background-color: white; border-radius: 10px; overflow: hidden;">
-            <table style="width: 100%; border-collapse: collapse;">
+        <div style="background-color: white; border-radius: 10px; overflow-x: auto; -webkit-overflow-scrolling: touch;">
+            <table style="min-width: 600px; width: 100%; border-collapse: collapse;">
                 <thead>
                     <tr style="background-color: #D7C4A3;">
                         <th style="padding: 12px; text-align: left; color: #8B5A3C;">Uhrzeit</th>
