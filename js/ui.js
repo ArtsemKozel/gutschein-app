@@ -988,21 +988,30 @@ async function showAdminDashboard(period = 'all') {
                     </div>
                 </div>
                 <div class="stats-content" onclick="event.stopPropagation()">
-                    <div style="margin-bottom: 20px;">
-                        <label style="display: block; margin-bottom: 8px; color: #6B7C59; font-weight: bold;">Datum auswählen:</label>
-                        <input 
+                    <div class="redemption-controls">
+                        <label style="color: #6B7C59; font-weight: bold; margin-bottom: 5px;">Datum auswählen:</label>
+        
+                        <div class="redemption-date-row">
+                            <input 
                             type="date" 
                             id="redemption-date" 
                             value="${new Date().toISOString().split('T')[0]}"
-                            onchange="loadAndDisplayRedemptions()"
                             onclick="event.stopPropagation()"
-                            style="padding: 10px; border: 2px solid #E8D9B6; border-radius: 8px; font-size: 16px;"
-                        >
-                        <button onclick="event.stopPropagation(); loadAndDisplayRedemptions()" style="margin-left: 10px; padding: 10px 20px;">🔄 Laden</button>
-                        <button onclick="event.stopPropagation(); exportDailyRedemptions()" style="margin-left: 10px; padding: 10px 20px; background-color: #A67C52;">📄 Export</button>
+                            >
+                        </div>
+        
+                        <div class="redemption-button-row">
+                            <button class="redemption-load-btn" onclick="event.stopPropagation(); loadAndDisplayRedemptions()">
+                                🔄 Laden
+                            </button>
+                            <button class="redemption-export-btn" onclick="event.stopPropagation(); exportDailyRedemptions()">
+                                📄 Export
+                            </button>
+                        </div>
                     </div>
+    
                     <div id="redemptions-display">
-                        <p style="text-align: center; color: #888;">Klicke "Laden" um Einlösungen anzuzeigen</p>
+                        <div class="redemption-hint">Wähle ein Datum und klicke "Laden"</div>
                     </div>
                 </div>
             </div>

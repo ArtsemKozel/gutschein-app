@@ -1085,3 +1085,70 @@ button:active {
     color: #6B7C59;
     font-style: italic;
 }
+
+/* ====================================
+   KASSENABSCHLUSS / TÄGLICHE EINLÖSUNGEN
+   ==================================== */
+
+.redemption-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.redemption-date-row {
+    display: flex;
+    gap: 10px;
+    align-items: stretch;
+}
+
+.redemption-date-row input[type="date"] {
+    flex: 1;
+    padding: 12px;
+    border: 2px solid #E8D9B6;
+    border-radius: 8px;
+    font-size: 16px;
+}
+
+.redemption-button-row {
+    display: flex;
+    gap: 10px;
+}
+
+.redemption-button-row button {
+    flex: 1;
+    padding: 12px;
+    font-size: 16px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+}
+
+.redemption-load-btn {
+    background-color: #6B7C59 !important;
+    color: white;
+}
+
+.redemption-export-btn {
+    background-color: #A67C52 !important;
+    color: white;
+}
+
+.redemption-hint {
+    text-align: center;
+    color: #888;
+    font-size: 14px;
+    padding: 20px;
+}
+
+/* Responsive: Kleinere Bildschirme */
+@media (max-width: 600px) {
+    .redemption-date-row {
+        flex-direction: column;
+    }
+    
+    .redemption-button-row button {
+        font-size: 15px;
+        padding: 14px;
+    }
+}
