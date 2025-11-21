@@ -962,3 +962,52 @@ button:active {
 .cancel-btn:hover {
     background-color: #6d3d28;
 }
+
+/* ====================================
+   QR-CODE SCANNER
+   ==================================== */
+
+.scanner-container {
+    background-color: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    margin-top: 20px;
+}
+
+.scanner-container h3 {
+    color: #8B5A3C;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+#qr-reader {
+    border: 2px solid #E8D9B6;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+#qr-reader video {
+    width: 100%;
+    border-radius: 8px;
+}
+
+.scanner-info {
+    margin-top: 15px;
+    padding: 12px;
+    background-color: #F6EAD2;
+    border-radius: 8px;
+    color: #6B7C59;
+    text-align: center;
+    font-size: 14px;
+}
+
+.scanner-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.scanner-buttons button {
+    flex: 1;
+}

@@ -229,15 +229,21 @@ function showRedeemVoucher() {
             </div>
             
             <div class="search-box">
-                <label for="voucher-code">Gutschein-Code eingeben:</label>
+                <label for="voucher-code-search">Gutschein-Code eingeben:</label>
                 <input 
                     type="text" 
-                    id="voucher-code" 
+                    id="voucher-code-search" 
                     placeholder="z.B. GIFT-0001"
-                    autocapitalize="characters"
+                    onkeypress="if(event.key==='Enter') searchVoucher()"
                 >
-                <button onclick="searchVoucher()">Suchen</button>
+                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                    <button onclick="searchVoucher()" style="flex: 1;">🔍 Suchen</button>
+                    <button onclick="startQRScanner()" style="flex: 1; background-color: #6B7C59;">📷 QR scannen</button>
+                </div>
             </div>
+
+            <!-- Scanner wird hier eingefügt -->
+            <div id="qr-scanner-section"></div>
             
             <div id="search-result">
                 <!-- Hier erscheint das Ergebnis -->
@@ -1044,4 +1050,75 @@ async function confirmCancelVoucher(voucherId, voucherCode) {
     } else {
         alert('❌ Fehler: ' + result.error);
     }
+}
+
+// ====================================
+// QR-CODE SCANNER
+// ====================================
+
+let html5QrcodeScanner = null;
+
+// Scanner starten
+function startQRScanner() {
+    const scannerDiv = document.getElementById('qr-scanner-section');
+    
+    scannerDiv.innerHTML = `
+        <div class="scanner-container">
+            <h3>📷 QR-Code scannen</h3>
+            <div id="qr-reader"></div>
+            <div class="scanner-info">
+                📱 Richte die Kamera auf den QR-Code
+            </div>
+            <div class="scanner-buttons">
+                <button onclick="stopQRScanner()">❌ Abbrechen</button>
+            </div>
+        </div>
+    `;
+    
+    // Scanner initialisieren
+    html5QrcodeScanner = new Html5Qrcode("qr-reader");
+    
+    html5QrcodeScanner.start(
+        { facingMode: "environment" }, // Rückkamera bevorzugen
+        {
+            fps: 10,
+            qrbox: { width: 250, height: 250 }
+        },
+        onScanSuccess,
+        onScanError
+    ).catch(err => {
+        console.error('Scanner-Start-Fehler:', err);
+        alert('Kamera konnte nicht gestartet werden. Stelle sicher, dass du den Kamera-Zugriff erlaubt hast.');
+    });
+}
+
+// Scanner stoppen
+function stopQRScanner() {
+    if (html5QrcodeScanner) {
+        html5QrcodeScanner.stop().then(() => {
+            html5QrcodeScanner = null;
+            document.getElementById('qr-scanner-section').innerHTML = '';
+        }).catch(err => {
+            console.error('Fehler beim Stoppen:', err);
+        });
+    }
+}
+
+// Erfolgreicher Scan
+function onScanSuccess(decodedText) {
+    console.log('QR-Code gescannt:', decodedText);
+    
+    // Scanner stoppen
+    stopQRScanner();
+    
+    // Code ins Suchfeld eintragen
+    document.getElementById('voucher-code-search').value = decodedText;
+    
+    // Automatisch suchen
+    searchVoucher();
+}
+
+// Scan-Fehler (ignorieren, passiert ständig)
+function onScanError(error) {
+    // Nicht loggen - zu viele Meldungen
 }
