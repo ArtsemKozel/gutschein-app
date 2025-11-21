@@ -189,31 +189,49 @@ function showVoucherCreated(voucher) {
             </div>
             
             <div class="action-buttons">
+                <button onclick="generateSimplePDF(${JSON.stringify(voucher).replace(/"/g, '&quot;')})" style="background-color: #A67C52;">📄 Als PDF herunterladen</button>
                 <button onclick="showCreateVoucher()">+ Weiteren Gutschein</button>
                 <button onclick="showDashboard()">← Zum Dashboard</button>
             </div>
         </div>
     `;
     
-    // QR-Code generieren
-    generateQRCode(voucher.code);
+    // QR-Code generieren (mit kleinem Delay)
+    setTimeout(() => {
+        generateQRCode(voucher.code);
+    }, 200);
 }
 
 // QR-Code generieren
 function generateQRCode(code) {
     const qrContainer = document.getElementById('qr-code');
     
-    if (typeof QRCode !== 'undefined') {
+    if (!qrContainer) {
+        console.error('QR-Container nicht gefunden');
+        return;
+    }
+    
+    // Prüfen ob QRCode Library geladen ist
+    if (typeof QRCode === 'undefined') {
+        qrContainer.innerHTML = '<p style="color: red;">QR-Code Library nicht geladen</p>';
+        console.error('QRCode library nicht verfügbar');
+        return;
+    }
+    
+    try {
         qrContainer.innerHTML = '';
         new QRCode(qrContainer, {
             text: code,
-            width: 150,
-            height: 150,
-            colorDark: '#8B5A3C',
-            colorLight: '#ffffff'
+            width: 200,
+            height: 200,
+            colorDark: "#000000",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.H
         });
-    } else {
-        qrContainer.innerHTML = '<p>QR-Code nicht verfügbar</p>';
+        console.log('QR-Code erfolgreich erstellt:', code);
+    } catch (error) {
+        console.error('Fehler beim QR-Code erstellen:', error);
+        qrContainer.innerHTML = '<p style="color: red;">Fehler: ' + error.message + '</p>';
     }
 }
 
@@ -1121,4 +1139,161 @@ function onScanSuccess(decodedText) {
 // Scan-Fehler (ignorieren, passiert ständig)
 function onScanError(error) {
     // Nicht loggen - zu viele Meldungen
+}
+
+// ====================================
+// EINFACHER PDF-GUTSCHEIN
+// ====================================
+
+// QR-Code als Data URL generieren (mit qrcode.js Library)
+async function generateQRCodeDataURL(code) {
+    return new Promise((resolve) => {
+        // Temporäres Container-Element erstellen
+        const tempDiv = document.createElement('div');
+        tempDiv.style.display = 'none';
+        document.body.appendChild(tempDiv);
+        
+        // QR-Code generieren
+        new QRCode(tempDiv, {
+            text: code,
+            width: 300,
+            height: 300,
+            colorDark: "#000000",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.H
+        });
+        
+        // Kurz warten bis Canvas erstellt ist
+        setTimeout(() => {
+            const canvas = tempDiv.querySelector('canvas');
+            if (canvas) {
+                const dataUrl = canvas.toDataURL('image/png');
+                document.body.removeChild(tempDiv);
+                resolve(dataUrl);
+            } else {
+                console.error('Canvas nicht gefunden');
+                document.body.removeChild(tempDiv);
+                resolve(null);
+            }
+        }, 100);
+    });
+}
+
+async function generateSimplePDF(voucher) {
+    try {
+        const { PDFDocument, rgb, StandardFonts } = PDFLib;
+        
+        // Neues PDF erstellen
+        const pdfDoc = await PDFDocument.create();
+        const page = pdfDoc.addPage([595, 842]); // A4
+        const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+        const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+        
+        const { width, height } = page.getSize();
+        
+        // Hintergrund
+        page.drawRectangle({
+            x: 50,
+            y: height - 350,
+            width: width - 100,
+            height: 300,
+            borderColor: rgb(0.42, 0.49, 0.35), // Olivgrün
+            borderWidth: 3,
+        });
+        
+        // Titel
+        page.drawText('GESCHENKGUTSCHEIN', {
+            x: width / 2 - 120,
+            y: height - 100,
+            size: 24,
+            font: fontBold,
+            color: rgb(0.54, 0.35, 0.24), // Braun
+        });
+        
+        // Restaurant Name
+        page.drawText('My Heart Beats Vegan', {
+            x: width / 2 - 90,
+            y: height - 130,
+            size: 16,
+            font: font,
+            color: rgb(0.42, 0.49, 0.35),
+        });
+        
+        // Wert (groß)
+        const valueText = `${parseFloat(voucher.original_value).toFixed(2)} €`;
+        page.drawText(valueText, {
+            x: width / 2 - 50,
+            y: height - 190,
+            size: 48,
+            font: fontBold,
+            color: rgb(0.54, 0.35, 0.24),
+        });
+        
+        // Code
+        page.drawText('Gutschein-Code:', {
+            x: 80,
+            y: height - 240,
+            size: 12,
+            font: font,
+            color: rgb(0.33, 0.33, 0.33),
+        });
+        
+        page.drawText(voucher.code, {
+            x: 80,
+            y: height - 260,
+            size: 20,
+            font: fontBold,
+            color: rgb(0, 0, 0),
+        });
+        
+        // Gültig bis
+        const expiryDate = new Date(voucher.expires_at).toLocaleDateString('de-DE');
+        page.drawText(`Gültig bis: ${expiryDate}`, {
+            x: 80,
+            y: height - 290,
+            size: 12,
+            font: font,
+            color: rgb(0.33, 0.33, 0.33),
+        });
+        
+        // QR-Code neu generieren für PDF
+        const qrCodeDataUrl = await generateQRCodeDataURL(voucher.code);
+        if (qrCodeDataUrl) {
+            const qrImageBytes = await fetch(qrCodeDataUrl).then(res => res.arrayBuffer());
+            const qrPdfImage = await pdfDoc.embedPng(qrImageBytes);
+    
+            page.drawImage(qrPdfImage, {
+                x: width - 200,
+                y: height - 320,
+                width: 120,
+                height: 120,
+            });
+        }
+        
+        // Fußzeile
+        page.drawText('Einlösbar im Restaurant | Nicht mit anderen Aktionen kombinierbar', {
+            x: width / 2 - 180,
+            y: 50,
+            size: 10,
+            font: font,
+            color: rgb(0.5, 0.5, 0.5),
+        });
+        
+        // PDF als Blob speichern
+        const pdfBytes = await pdfDoc.save();
+        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+        const url = URL.createObjectURL(blob);
+        
+        // Download auslösen
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `Gutschein-${voucher.code}.pdf`;
+        link.click();
+        
+        console.log('PDF erfolgreich erstellt!');
+        
+    } catch (error) {
+        console.error('Fehler beim PDF-Erstellen:', error);
+        alert('PDF konnte nicht erstellt werden: ' + error.message);
+    }
 }
