@@ -440,7 +440,7 @@ async function partialRedeem(voucherId) {
 }
 
 // Gutschein-Liste anzeigen (klappbare Karten)
-async function showVoucherList() {
+async function showVoucherList(filterStatus = 'all', searchTerm = '') {
     const app = document.getElementById('app');
     
     // Lade-Anzeige
@@ -456,14 +456,36 @@ async function showVoucherList() {
     
     // Gutscheine laden
     const vouchers = await loadAllVouchers();
-    
+
+    // Filter und Suche anwenden
+    let filteredVouchers = vouchers;
+
+    // Nach Status filtern
+    if (filterStatus !== 'all') {
+        filteredVouchers = filteredVouchers.filter(v => v.status === filterStatus);
+    }
+
+    // Nach Text suchen (Code oder Käufer-Name)
+    if (searchTerm.trim() !== '') {
+        const term = searchTerm.toLowerCase().trim();
+        filteredVouchers = filteredVouchers.filter(v => 
+            v.code.toLowerCase().includes(term) ||
+            (v.buyer_name && v.buyer_name.toLowerCase().includes(term))
+        );
+    }
+
     // Karten erstellen
     let cardsHTML = '';
     
-    if (vouchers.length === 0) {
-        cardsHTML = '<p>Keine Gutscheine vorhanden.</p>';
+    // Karten erstellen
+    if (filteredVouchers.length === 0) {
+        if (searchTerm || filterStatus !== 'all') {
+            cardsHTML = '<div class="no-results">🔍 Keine Gutscheine gefunden. Versuche andere Filter oder Suchbegriffe.</div>';
+        } else {
+            cardsHTML = '<div class="no-results">📋 Noch keine Gutscheine vorhanden.</div>';
+        }
     } else {
-        for (const voucher of vouchers) {
+        for (const voucher of filteredVouchers) {
             // Status-Text und Klasse
             let statusText = '';
             let statusClass = '';
@@ -501,16 +523,45 @@ async function showVoucherList() {
     
     // Inhalt aktualisieren
     app.innerHTML = `
-        <div class="voucher-list">
-            <div class="list-header">
-                <h2>📋 Alle Gutscheine</h2>
-                <button onclick="goBack()">← Zurück</button>
-            </div>
-            <div class="voucher-cards">
-                ${cardsHTML}
+    <div class="voucher-list">
+        <div class="list-header">
+            <h2>📋 Alle Gutscheine (${filteredVouchers.length})</h2>
+            <button onclick="goBack()">← Zurück</button>
+        </div>
+        
+        <!-- SUCH- UND FILTER-BOX -->
+        <div class="list-search-box">
+            <input 
+                type="text" 
+                id="list-search-input" 
+                placeholder="🔍 Suche nach Code oder Käufer-Name..."
+                value="${searchTerm}"
+                onkeyup="handleListSearch()"
+            >
+            <div class="filter-buttons-row">
+                <button class="${filterStatus === 'all' ? 'active' : ''}" onclick="showVoucherList('all', document.getElementById('list-search-input').value)">
+                    Alle
+                </button>
+                <button class="${filterStatus === 'active' ? 'active' : ''}" onclick="showVoucherList('active', document.getElementById('list-search-input').value)">
+                    Aktiv
+                </button>
+                <button class="${filterStatus === 'redeemed' ? 'active' : ''}" onclick="showVoucherList('redeemed', document.getElementById('list-search-input').value)">
+                    Eingelöst
+                </button>
+                <button class="${filterStatus === 'expired' ? 'active' : ''}" onclick="showVoucherList('expired', document.getElementById('list-search-input').value)">
+                    Abgelaufen
+                </button>
+                <button class="${filterStatus === 'cancelled' ? 'active' : ''}" onclick="showVoucherList('cancelled', document.getElementById('list-search-input').value)">
+                    Storniert
+                </button>
             </div>
         </div>
-    `;
+        
+        <div class="voucher-cards">
+            ${cardsHTML}
+        </div>
+    </div>
+`;
 }
 
 // Karte auf-/zuklappen
@@ -1301,4 +1352,29 @@ async function generateSimplePDF(voucher) {
         console.error('Fehler beim PDF-Erstellen:', error);
         alert('PDF konnte nicht erstellt werden: ' + error.message);
     }
+}
+
+// Such-Handler für Gutschein-Liste (mit Delay für bessere Performance)
+let searchTimeout;
+function handleListSearch() {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        const searchInput = document.getElementById('list-search-input');
+        if (searchInput) {
+            // Aktuellen Filter beibehalten
+            const activeButton = document.querySelector('.filter-buttons-row button.active');
+            const currentFilter = activeButton ? activeButton.textContent.trim().toLowerCase() : 'all';
+            
+            // Filter-Mapping
+            const filterMap = {
+                'alle': 'all',
+                'aktiv': 'active',
+                'eingelöst': 'redeemed',
+                'abgelaufen': 'expired',
+                'storniert': 'cancelled'
+            };
+            
+            showVoucherList(filterMap[currentFilter] || 'all', searchInput.value);
+        }
+    }, 300); // 300ms Delay nach letztem Tastendruck
 }

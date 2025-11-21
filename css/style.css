@@ -1011,3 +1011,64 @@ button:active {
 .scanner-buttons button {
     flex: 1;
 }
+
+/* ====================================
+   SUCHE/FILTER IN GUTSCHEIN-LISTE
+   ==================================== */
+
+.list-search-box {
+    background-color: white;
+    padding: 15px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.list-search-box input {
+    width: 100%;
+    padding: 12px;
+    font-size: 16px;
+    border: 2px solid #E8D9B6;
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+.list-search-box input:focus {
+    outline: none;
+    border-color: #A67C52;
+}
+
+.filter-buttons-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.filter-buttons-row button {
+    flex: 1;
+    min-width: 80px;
+    padding: 8px 12px;
+    font-size: 13px;
+    background-color: #D7C4A3;
+    color: #333;
+}
+
+.filter-buttons-row button.active {
+    background-color: #6B7C59;
+    color: white;
+}
+
+.filter-buttons-row button:hover {
+    background-color: #C4B090;
+}
+
+.filter-buttons-row button.active:hover {
+    background-color: #5a6b4a;
+}
+
+.no-results {
+    text-align: center;
+    padding: 40px;
+    color: #6B7C59;
+    font-style: italic;
+}
