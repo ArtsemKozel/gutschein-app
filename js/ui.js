@@ -559,6 +559,19 @@ async function showVoucherList(filterStatus = 'all', searchTerm = '') {
                     Storniert
                 </button>
             </div>
+
+            <!-- SORTIER-BUTTONS (NEU) -->
+             <div class="filter-buttons-row" style="margin-top: 10px; border-top: 1px solid #E8D9B6; padding-top: 10px;">
+                <button onclick="sortVoucherList('date', document.getElementById('list-search-input').value, getCurrentFilter())">
+                     📅 Nach Datum
+                </button>
+                <button onclick="sortVoucherList('value', document.getElementById('list-search-input').value, getCurrentFilter())">
+                    💰 Nach Wert
+                </button>
+                <button onclick="sortVoucherList('code', document.getElementById('list-search-input').value, getCurrentFilter())">
+                    🔢 Nach Code
+                </button>
+            </div>
         </div>
         
         <div class="voucher-cards">
@@ -859,11 +872,16 @@ async function showAdminDashboard(period = 'all') {
     
     app.innerHTML = `
         <div class="dashboard">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
                 <h2>📊 Admin-Dashboard <span class="admin-badge">ADMIN</span></h2>
-                <button onclick="adminLogout()" style="background-color: #8B5A3C;">
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="showChangePassword()" style="background-color: #A67C52;">
+                        🔑 Passwort ändern
+                    </button>
+                    <button onclick="adminLogout()" style="background-color: #8B5A3C;">
                     🚪 Ausloggen
-                </button>
+                    </button>
+                </div>
             </div>
             
             <div class="action-buttons">
@@ -1297,90 +1315,187 @@ async function generateSimplePDF(voucher) {
         
         const { width, height } = page.getSize();
         
-        // Hintergrund
+        // Farben definieren (Restaurant-Palette)
+        const olivGreen = rgb(0.42, 0.49, 0.35);
+        const beige = rgb(0.91, 0.85, 0.71);
+        const brown = rgb(0.54, 0.35, 0.24);
+        const darkBrown = rgb(0.44, 0.28, 0.19);
+        const lightBeige = rgb(0.96, 0.92, 0.82);
+        
+        // HINTERGRUND - Beige Box
         page.drawRectangle({
-            x: 50,
-            y: height - 350,
-            width: width - 100,
-            height: 300,
-            borderColor: rgb(0.42, 0.49, 0.35), // Olivgrün
-            borderWidth: 3,
+            x: 40,
+            y: height - 700,
+            width: width - 80,
+            height: 600,
+            color: lightBeige,
         });
         
-        // Titel
-        page.drawText('GESCHENKGUTSCHEIN', {
-            x: width / 2 - 120,
-            y: height - 100,
-            size: 24,
-            font: fontBold,
-            color: rgb(0.54, 0.35, 0.24), // Braun
+        // OBERE DEKORATIVE LINIE
+        page.drawRectangle({
+            x: 40,
+            y: height - 110,
+            width: width - 80,
+            height: 4,
+            color: olivGreen,
         });
         
-        // Restaurant Name
+        // RESTAURANT NAME
         page.drawText('My Heart Beats Vegan', {
-            x: width / 2 - 90,
-            y: height - 130,
-            size: 16,
-            font: font,
-            color: rgb(0.42, 0.49, 0.35),
+            x: width / 2 - 105,
+            y: height - 80,
+            size: 20,
+            font: fontBold,
+            color: olivGreen,
         });
         
-        // Wert (groß)
+        // GESCHENKGUTSCHEIN - großer Titel
+        page.drawRectangle({
+            x: 80,
+            y: height - 180,
+            width: width - 160,
+            height: 60,
+            color: olivGreen,
+        });
+        
+        page.drawText('GESCHENKGUTSCHEIN', {
+            x: width / 2 - 130,
+            y: height - 160,
+            size: 28,
+            font: fontBold,
+            color: rgb(1, 1, 1),
+        });
+        
+        // WERT - Großer Betrag
         const valueText = `${parseFloat(voucher.original_value).toFixed(2)} €`;
         page.drawText(valueText, {
-            x: width / 2 - 50,
-            y: height - 190,
-            size: 48,
+            x: width / 2 - 70,
+            y: height - 250,
+            size: 56,
             font: fontBold,
-            color: rgb(0.54, 0.35, 0.24),
+            color: brown,
         });
         
-        // Code
+        // DETAILS BOX
+        const detailsY = height - 320;
+        
+        // Gutschein-Code
         page.drawText('Gutschein-Code:', {
-            x: 80,
-            y: height - 240,
+            x: 100,
+            y: detailsY,
             size: 12,
             font: font,
-            color: rgb(0.33, 0.33, 0.33),
+            color: darkBrown,
         });
         
         page.drawText(voucher.code, {
-            x: 80,
-            y: height - 260,
-            size: 20,
+            x: 100,
+            y: detailsY - 25,
+            size: 22,
             font: fontBold,
             color: rgb(0, 0, 0),
         });
         
         // Gültig bis
         const expiryDate = new Date(voucher.expires_at).toLocaleDateString('de-DE');
-        page.drawText(`Gültig bis: ${expiryDate}`, {
-            x: 80,
-            y: height - 290,
+        page.drawText('Gültig bis:', {
+            x: 100,
+            y: detailsY - 60,
             size: 12,
             font: font,
-            color: rgb(0.33, 0.33, 0.33),
+            color: darkBrown,
         });
         
-        // QR-Code neu generieren für PDF
-        const qrCodeDataUrl = await generateQRCodeDataURL(voucher.code);
-        if (qrCodeDataUrl) {
-            const qrImageBytes = await fetch(qrCodeDataUrl).then(res => res.arrayBuffer());
-            const qrPdfImage = await pdfDoc.embedPng(qrImageBytes);
-    
-            page.drawImage(qrPdfImage, {
-                x: width - 200,
-                y: height - 320,
-                width: 120,
-                height: 120,
+        page.drawText(expiryDate, {
+            x: 100,
+            y: detailsY - 80,
+            size: 16,
+            font: fontBold,
+            color: rgb(0, 0, 0),
+        });
+        
+        // Käufer-Name (falls vorhanden)
+        if (voucher.buyer_name) {
+            page.drawText('Für:', {
+                x: 100,
+                y: detailsY - 115,
+                size: 12,
+                font: font,
+                color: darkBrown,
+            });
+            
+            page.drawText(voucher.buyer_name, {
+                x: 100,
+                y: detailsY - 135,
+                size: 14,
+                font: fontBold,
+                color: rgb(0, 0, 0),
             });
         }
         
-        // Fußzeile
-        page.drawText('Einlösbar im Restaurant | Nicht mit anderen Aktionen kombinierbar', {
+        // QR-CODE BOX (rechts)
+        page.drawRectangle({
+            x: width - 200,
+            y: height - 480,
+            width: 150,
+            height: 150,
+            color: rgb(1, 1, 1),
+            borderColor: olivGreen,
+            borderWidth: 3,
+        });
+        
+        // QR-Code hinzufügen
+        const qrContainer = document.getElementById('qr-code');
+        const qrCanvas = qrContainer ? qrContainer.querySelector('canvas') : null;
+        
+        if (qrCanvas) {
+            try {
+                const qrDataUrl = qrCanvas.toDataURL('image/png');
+                const qrImageBytes = await fetch(qrDataUrl).then(res => res.arrayBuffer());
+                const qrPdfImage = await pdfDoc.embedPng(qrImageBytes);
+                
+                page.drawImage(qrPdfImage, {
+                    x: width - 192,
+                    y: height - 472,
+                    width: 134,
+                    height: 134,
+                });
+            } catch (error) {
+                console.log('QR-Code konnte nicht ins PDF eingefügt werden:', error);
+            }
+        }
+        
+        // QR-Code Label
+        page.drawText('Zum Einlösen scannen', {
+            x: width - 192,
+            y: height - 495,
+            size: 9,
+            font: font,
+            color: darkBrown,
+        });
+        
+        // UNTERE DEKORATIVE LINIE
+        page.drawRectangle({
+            x: 40,
+            y: 120,
+            width: width - 80,
+            height: 3,
+            color: olivGreen,
+        });
+        
+        // FUSSZEILE
+        page.drawText('Einlösbar im Restaurant My Heart Beats Vegan', {
+            x: width / 2 - 150,
+            y: 90,
+            size: 11,
+            font: font,
+            color: darkBrown,
+        });
+        
+        page.drawText('Nicht mit anderen Aktionen kombinierbar • Keine Barauszahlung möglich', {
             x: width / 2 - 180,
-            y: 50,
-            size: 10,
+            y: 70,
+            size: 9,
             font: font,
             color: rgb(0.5, 0.5, 0.5),
         });
@@ -1645,4 +1760,289 @@ async function exportDailyRedemptions() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+}
+
+// ====================================
+// SORTIERUNG FÜR GUTSCHEIN-LISTE
+// ====================================
+
+// Aktuellen Filter ermitteln
+function getCurrentFilter() {
+    const activeButton = document.querySelector('.filter-buttons-row button.active');
+    if (!activeButton) return 'all';
+    
+    const text = activeButton.textContent.trim().toLowerCase();
+    const filterMap = {
+        'alle': 'all',
+        'aktiv': 'active',
+        'eingelöst': 'redeemed',
+        'abgelaufen': 'expired',
+        'storniert': 'cancelled'
+    };
+    
+    return filterMap[text] || 'all';
+}
+
+// Gutschein-Liste sortieren
+async function sortVoucherList(sortBy, searchTerm, filterStatus) {
+    console.log('Sortiere nach:', sortBy);
+    
+    const app = document.getElementById('app');
+    
+    // Lade-Anzeige
+    app.innerHTML = `
+        <div class="voucher-list">
+            <div class="list-header">
+                <h2>📋 Alle Gutscheine</h2>
+                <button onclick="goBack()">← Zurück</button>
+            </div>
+            <p style="text-align: center; padding: 40px;">Lädt...</p>
+        </div>
+    `;
+    
+    // Gutscheine laden
+    const vouchers = await loadAllVouchers();
+    
+    // Filter anwenden
+    let filteredVouchers = vouchers;
+    
+    if (filterStatus !== 'all') {
+        filteredVouchers = filteredVouchers.filter(v => v.status === filterStatus);
+    }
+    
+    if (searchTerm.trim() !== '') {
+        const term = searchTerm.toLowerCase().trim();
+        filteredVouchers = filteredVouchers.filter(v => 
+            v.code.toLowerCase().includes(term) ||
+            (v.buyer_name && v.buyer_name.toLowerCase().includes(term))
+        );
+    }
+    
+    // SORTIEREN
+    if (sortBy === 'date') {
+        // Nach Datum (neueste zuerst)
+        filteredVouchers.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    } else if (sortBy === 'value') {
+        // Nach Wert (höchste zuerst)
+        filteredVouchers.sort((a, b) => parseFloat(b.original_value) - parseFloat(a.original_value));
+    } else if (sortBy === 'code') {
+        // Nach Code (alphabetisch)
+        filteredVouchers.sort((a, b) => a.code.localeCompare(b.code));
+    }
+    
+    // Karten erstellen
+    let cardsHTML = '';
+    
+    if (filteredVouchers.length === 0) {
+        if (searchTerm || filterStatus !== 'all') {
+            cardsHTML = '<div class="no-results">🔍 Keine Gutscheine gefunden. Versuche andere Filter oder Suchbegriffe.</div>';
+        } else {
+            cardsHTML = '<div class="no-results">📋 Noch keine Gutscheine vorhanden.</div>';
+        }
+    } else {
+        for (const voucher of filteredVouchers) {
+            const createdDate = new Date(voucher.created_at).toLocaleDateString('de-DE');
+            const expiryDate = new Date(voucher.expires_at).toLocaleDateString('de-DE');
+            
+            let statusText = '';
+            let statusClass = '';
+            
+            if (voucher.status === 'active') {
+                statusText = 'Aktiv';
+                statusClass = 'status-active';
+            } else if (voucher.status === 'redeemed') {
+                statusText = 'Eingelöst';
+                statusClass = 'status-redeemed';
+            } else if (voucher.status === 'expired') {
+                statusText = 'Abgelaufen';
+                statusClass = 'status-expired';
+            } else if (voucher.status === 'cancelled') {
+                statusText = 'Storniert';
+                statusClass = 'status-cancelled';
+            }
+            
+            cardsHTML += `
+                <div class="voucher-card" id="voucher-${voucher.id}" onclick="toggleVoucherCard('${voucher.id}')">
+                    <div class="voucher-card-header">
+                        <div class="voucher-code">${voucher.code}</div>
+                        <span class="${statusClass}">${statusText}</span>
+                    </div>
+                    <div class="voucher-card-info">
+                        <div>Wert: ${parseFloat(voucher.original_value).toFixed(2)} €</div>
+                        <div>Erstellt: ${createdDate}</div>
+                    </div>
+                </div>
+            `;
+        }
+    }
+    
+    // Inhalt aktualisieren
+    app.innerHTML = `
+        <div class="voucher-list">
+            <div class="list-header">
+                <h2>📋 Alle Gutscheine (${filteredVouchers.length})</h2>
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="exportAllVouchersToCSV()" style="background-color: #A67C52;">📥 CSV Export</button>
+                    <button onclick="goBack()">← Zurück</button>
+                </div>
+            </div>
+            
+            <div class="list-search-box">
+                <input 
+                    type="text" 
+                    id="list-search-input" 
+                    placeholder="🔍 Suche nach Code oder Käufer-Name..."
+                    value="${searchTerm}"
+                    onkeyup="handleListSearch()"
+                >
+                <!-- STATUS FILTER -->
+                <div class="filter-buttons-row">
+                    <button class="${filterStatus === 'all' ? 'active' : ''}" onclick="showVoucherList('all', document.getElementById('list-search-input').value)">
+                        Alle
+                    </button>
+                    <button class="${filterStatus === 'active' ? 'active' : ''}" onclick="showVoucherList('active', document.getElementById('list-search-input').value)">
+                        Aktiv
+                    </button>
+                    <button class="${filterStatus === 'redeemed' ? 'active' : ''}" onclick="showVoucherList('redeemed', document.getElementById('list-search-input').value)">
+                        Eingelöst
+                    </button>
+                    <button class="${filterStatus === 'expired' ? 'active' : ''}" onclick="showVoucherList('expired', document.getElementById('list-search-input').value)">
+                        Abgelaufen
+                    </button>
+                    <button class="${filterStatus === 'cancelled' ? 'active' : ''}" onclick="showVoucherList('cancelled', document.getElementById('list-search-input').value)">
+                        Storniert
+                    </button>
+                </div>
+                
+                <!-- SORTIER-BUTTONS -->
+                <div class="filter-buttons-row" style="margin-top: 10px; border-top: 1px solid #E8D9B6; padding-top: 10px;">
+                    <button onclick="sortVoucherList('date', document.getElementById('list-search-input').value, getCurrentFilter())">
+                        📅 Nach Datum
+                    </button>
+                    <button onclick="sortVoucherList('value', document.getElementById('list-search-input').value, getCurrentFilter())">
+                        💰 Nach Wert
+                    </button>
+                    <button onclick="sortVoucherList('code', document.getElementById('list-search-input').value, getCurrentFilter())">
+                        🔢 Nach Code
+                    </button>
+                </div>
+            </div>
+            
+            <div class="voucher-cards">
+                ${cardsHTML}
+            </div>
+        </div>
+    `;
+}
+
+// ====================================
+// ADMIN-PASSWORT ÄNDERN
+// ====================================
+
+function showChangePassword() {
+    const app = document.getElementById('app');
+    
+    app.innerHTML = `
+        <div class="dashboard">
+            <div class="list-header">
+                <h2>🔑 Passwort ändern</h2>
+                <button onclick="showAdminDashboard()">← Zurück</button>
+            </div>
+            
+            <div style="background-color: white; padding: 30px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); max-width: 500px; margin: 20px auto;">
+                
+                <div class="form-group">
+                    <label for="current-password">Aktuelles Passwort:</label>
+                    <input 
+                        type="password" 
+                        id="current-password" 
+                        placeholder="Aktuelles Passwort eingeben"
+                    >
+                </div>
+                
+                <div class="form-group">
+                    <label for="new-password">Neues Passwort:</label>
+                    <input 
+                        type="password" 
+                        id="new-password" 
+                        placeholder="Neues Passwort eingeben"
+                    >
+                </div>
+                
+                <div class="form-group">
+                    <label for="confirm-password">Neues Passwort bestätigen:</label>
+                    <input 
+                        type="password" 
+                        id="confirm-password" 
+                        placeholder="Neues Passwort wiederholen"
+                    >
+                </div>
+                
+                <div style="background-color: #F6EAD2; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <strong>⚠️ Wichtig:</strong>
+                    <ul style="margin: 10px 0 0 20px; color: #6B7C59;">
+                        <li>Mindestens 6 Zeichen</li>
+                        <li>Merke dir das neue Passwort gut!</li>
+                    </ul>
+                </div>
+                
+                <div class="action-buttons">
+                    <button onclick="changeAdminPassword()">✅ Passwort ändern</button>
+                    <button onclick="showAdminDashboard()">❌ Abbrechen</button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function changeAdminPassword() {
+    const currentPassword = document.getElementById('current-password').value;
+    const newPassword = document.getElementById('new-password').value;
+    const confirmPassword = document.getElementById('confirm-password').value;
+    
+    if (!currentPassword || !newPassword || !confirmPassword) {
+        alert('⚠️ Bitte alle Felder ausfüllen!');
+        return;
+    }
+    
+    // Aktuelles PIN aus loggedInUser holen
+    const loggedInUserStr = localStorage.getItem('loggedInUser');
+    if (!loggedInUserStr) {
+        alert('❌ Fehler: Kein Admin eingeloggt!');
+        return;
+    }
+    
+    const loggedInUser = JSON.parse(loggedInUserStr);
+    const storedPin = loggedInUser.pin || '1234';
+    
+    if (currentPassword !== storedPin) {
+        alert('❌ Aktuelles Passwort ist falsch!');
+        return;
+    }
+    
+    if (newPassword !== confirmPassword) {
+        alert('⚠️ Die neuen Passwörter stimmen nicht überein!');
+        return;
+    }
+    
+    if (newPassword.length < 4) {
+        alert('⚠️ Das neue Passwort muss mindestens 4 Zeichen lang sein!');
+        return;
+    }
+    
+    if (newPassword === currentPassword) {
+        alert('⚠️ Das neue Passwort muss sich vom aktuellen unterscheiden!');
+        return;
+    }
+    
+    const confirmed = confirm('🔐 Passwort wirklich ändern?');
+    
+    if (!confirmed) return;
+    
+    // Neues PIN speichern
+    loggedInUser.pin = newPassword;
+    localStorage.setItem('loggedInUser', JSON.stringify(loggedInUser));
+    
+    alert('✅ Passwort erfolgreich geändert!');
+    showAdminDashboard();
 }
