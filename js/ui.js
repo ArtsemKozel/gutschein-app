@@ -1531,7 +1531,7 @@ async function loadAndDisplayRedemptions() {
     // Liste erstellen
     let html = `
         <!-- GESAMTSUMME -->
-        <div style="background-color: #6B7C59; color: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; text-align: center;">
+        <div style="background-color: #6B7C59; color: white; padding: 20px; border-radius: 10px; margin-top: 20px; margin-bottom: 20px; text-align: center;">
             <div style="font-size: 14px; margin-bottom: 5px;">Kassenabschluss</div>
             <div style="font-size: 36px; font-weight: bold;">${result.totalAmount.toFixed(2)} €</div>
             <div style="font-size: 14px; margin-top: 5px;">${result.count} Einlösungen</div>
