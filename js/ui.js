@@ -992,7 +992,7 @@ async function showAdminDashboard(period = 'all') {
                         <label style="color: #6B7C59; font-weight: bold; margin-bottom: 5px;">Datum auswählen:</label>
         
                         <div class="redemption-date-row">
-                            <button onclick="event.stopPropagation(); changeRedemptionDate(-1)" style="flex: 0 0 50px; padding: 12px; font-size: 20px; background-color: #D7C4A3; border: 2px solid #E8D9B6; border-radius: 8px; cursor: pointer;">
+                            <button onclick="event.stopPropagation(); changeRedemptionDate(-1)" style="flex: 0 0 auto; min-width: 40px; padding: 12px 8px; font-size: 20px; background-color: #D7C4A3; border: 2px solid #E8D9B6; border-radius: 8px; cursor: pointer;">
                                 ←
                             </button>
                             <input 
@@ -1003,7 +1003,7 @@ async function showAdminDashboard(period = 'all') {
                                 onchange="loadAndDisplayRedemptions()"
                                 style="flex: 1; padding: 12px; border: 2px solid #E8D9B6; border-radius: 8px; font-size: 16px;"
                             >
-                            <button onclick="event.stopPropagation(); changeRedemptionDate(1)" style="flex: 0 0 50px; padding: 12px; font-size: 20px; background-color: #D7C4A3; border: 2px solid #E8D9B6; border-radius: 8px; cursor: pointer;">
+                            <button onclick="event.stopPropagation(); changeRedemptionDate(-1)" style="flex: 0 0 auto; min-width: 40px; padding: 12px 8px; font-size: 20px; background-color: #D7C4A3; border: 2px solid #E8D9B6; border-radius: 8px; cursor: pointer;">
                             →
                             </button>
                         </div>

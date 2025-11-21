@@ -1098,8 +1098,38 @@ button:active {
 
 .redemption-date-row {
     display: flex;
-    gap: 10px;
+    gap: 8px;
     align-items: stretch;
+    flex-wrap: nowrap;
+}
+
+.redemption-date-row button {
+    flex: 0 0 50px;
+    background-color: #D7C4A3;
+    border: 2px solid #E8D9B6;
+    font-size: 20px;
+}
+
+.redemption-date-row button:hover {
+    background-color: #C4B090;
+}
+
+/* Mobile: Buttons schmaler */
+@media (max-width: 600px) {
+    .redemption-date-row {
+        gap: 5px;
+    }
+    
+    .redemption-date-row button {
+        flex: 0 0 40px;
+        font-size: 18px;
+        padding: 8px 4px;
+    }
+    
+    .redemption-date-row input[type="date"] {
+        font-size: 14px;
+        padding: 10px 8px;
+    }
 }
 
 .redemption-date-row button {
