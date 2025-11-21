@@ -447,3 +447,45 @@ async function cancelVoucher(voucherId, reason) {
     console.log('Stornierung erfolgreich!');
     return { success: true };
 }
+
+// Einlösungen für ein bestimmtes Datum laden
+async function loadRedemptionsByDate(date) {
+    console.log('Lade Einlösungen für:', date);
+    
+    // Start und Ende des Tages
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
+    
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
+    
+    const startISO = startOfDay.toISOString();
+    const endISO = endOfDay.toISOString();
+    
+    // Transaktionen laden
+    const { data, error } = await supabase
+        .from('voucher_transactions')
+        .select(`
+            *,
+            vouchers (code, original_value, buyer_name)
+        `)
+        .gte('created_at', startISO)
+        .lte('created_at', endISO)
+        .in('action', ['redeemed', 'partial_redeem'])
+        .order('created_at', { ascending: false });
+    
+    if (error) {
+        console.error('Fehler beim Laden:', error.message);
+        return null;
+    }
+    
+    // Gesamtsumme berechnen
+    const totalAmount = data.reduce((sum, t) => sum + parseFloat(t.amount), 0);
+    
+    return {
+        transactions: data,
+        totalAmount: totalAmount,
+        count: data.length,
+        date: date
+    };
+}

@@ -28,6 +28,8 @@ document.addEventListener('DOMContentLoaded', async function() {
 async function showDashboard() {
     console.log('Zeige Dashboard...');
     
+    const app = document.getElementById('app');
+    
     // Admin-Button anpassen
     updateAdminButton();
     
@@ -39,7 +41,6 @@ async function showDashboard() {
                 <button onclick="showCreateVoucher()">➕ Neuer Gutschein</button>
                 <button onclick="showRedeemVoucher()">💰 Einlösen</button>
             </div>
-            
         </div>
     `;
 }
@@ -526,7 +527,10 @@ async function showVoucherList(filterStatus = 'all', searchTerm = '') {
     <div class="voucher-list">
         <div class="list-header">
             <h2>📋 Alle Gutscheine (${filteredVouchers.length})</h2>
-            <button onclick="goBack()">← Zurück</button>
+            <div style="display: flex; gap: 10px;">
+                <button onclick="exportAllVouchersToCSV()" style="background-color: #A67C52;">📥 CSV Export</button>
+                <button onclick="goBack()">← Zurück</button>
+            </div>
         </div>
         
         <!-- SUCH- UND FILTER-BOX -->
@@ -974,6 +978,35 @@ async function showAdminDashboard(period = 'all') {
                     </div>
                 </div>
             </div>
+
+            <!-- KLAPPBAR: TÄGLICHE EINLÖSUNGEN -->
+            <div class="stats-section" id="stats-redemptions" onclick="toggleStatsSection('stats-redemptions')">
+                <div class="stats-header">
+                    <div class="stats-title">
+                        <span class="stats-arrow">▶</span>
+                        <span>Kassenabschluss / Tägliche Einlösungen</span>
+                    </div>
+                </div>
+                <div class="stats-content" onclick="event.stopPropagation()">
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; color: #6B7C59; font-weight: bold;">Datum auswählen:</label>
+                        <input 
+                            type="date" 
+                            id="redemption-date" 
+                            value="${new Date().toISOString().split('T')[0]}"
+                            onchange="loadAndDisplayRedemptions()"
+                            onclick="event.stopPropagation()"
+                            style="padding: 10px; border: 2px solid #E8D9B6; border-radius: 8px; font-size: 16px;"
+                        >
+                        <button onclick="event.stopPropagation(); loadAndDisplayRedemptions()" style="margin-left: 10px; padding: 10px 20px;">🔄 Laden</button>
+                        <button onclick="event.stopPropagation(); exportDailyRedemptions()" style="margin-left: 10px; padding: 10px 20px; background-color: #A67C52;">📄 Export</button>
+                    </div>
+                    <div id="redemptions-display">
+                        <p style="text-align: center; color: #888;">Klicke "Laden" um Einlösungen anzuzeigen</p>
+                    </div>
+                </div>
+            </div>
+
             <!-- KLAPPBAR: DIAGRAMME -->
             <div class="stats-section" id="stats-charts" onclick="toggleStatsSection('stats-charts')">
                 <div class="stats-header">
@@ -1377,4 +1410,204 @@ function handleListSearch() {
             showVoucherList(filterMap[currentFilter] || 'all', searchInput.value);
         }
     }, 300); // 300ms Delay nach letztem Tastendruck
+}
+
+// ====================================
+// CSV-EXPORT ALLER GUTSCHEINE
+// ====================================
+
+async function exportAllVouchersToCSV() {
+    console.log('Exportiere alle Gutscheine...');
+    
+    // Alle Gutscheine laden
+    const vouchers = await loadAllVouchers();
+    
+    if (vouchers.length === 0) {
+        alert('Keine Gutscheine zum Exportieren vorhanden.');
+        return;
+    }
+    
+    // CSV-Header
+    let csv = 'Code,Status,Original-Wert (EUR),Restwert (EUR),Eingelöst (EUR),Käufer,E-Mail,Versandart,Erstellt am,Gültig bis,Eingelöst am,Notizen\n';
+    
+    // Daten hinzufügen
+    vouchers.forEach(v => {
+        const createdDate = new Date(v.created_at).toLocaleDateString('de-DE');
+        const expiryDate = new Date(v.expires_at).toLocaleDateString('de-DE');
+        const redeemedDate = v.redeemed_at ? new Date(v.redeemed_at).toLocaleDateString('de-DE') : '-';
+        
+        const originalValue = parseFloat(v.original_value).toFixed(2);
+        const remainingValue = parseFloat(v.remaining_value).toFixed(2);
+        const redeemedValue = (originalValue - remainingValue).toFixed(2);
+        
+        // Status auf Deutsch
+        let statusDE = v.status;
+        if (v.status === 'active') statusDE = 'Aktiv';
+        else if (v.status === 'redeemed') statusDE = 'Eingelöst';
+        else if (v.status === 'expired') statusDE = 'Abgelaufen';
+        else if (v.status === 'cancelled') statusDE = 'Storniert';
+        
+        // Versandart auf Deutsch
+        let deliveryDE = v.delivery_method || '-';
+        if (v.delivery_method === 'in_person') deliveryDE = 'Vor Ort';
+        else if (v.delivery_method === 'mail') deliveryDE = 'Per Post';
+        else if (v.delivery_method === 'email') deliveryDE = 'Per E-Mail';
+        
+        // CSV-Zeile erstellen (Kommas in Texten escapen)
+        const escapeCsv = (text) => {
+            if (!text) return '-';
+            text = String(text).replace(/"/g, '""'); // Doppelte Anführungszeichen escapen
+            if (text.includes(',') || text.includes('"') || text.includes('\n')) {
+                return `"${text}"`;
+            }
+            return text;
+        };
+        
+        csv += `${v.code},${statusDE},${originalValue},${remainingValue},${redeemedValue},`;
+        csv += `${escapeCsv(v.buyer_name)},${escapeCsv(v.buyer_email)},${deliveryDE},`;
+        csv += `${createdDate},${expiryDate},${redeemedDate},${escapeCsv(v.notes)}\n`;
+    });
+    
+    // Download auslösen
+    const timestamp = new Date().toISOString().split('T')[0];
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', `alle-gutscheine-${timestamp}.csv`);
+    link.style.visibility = 'hidden';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    console.log(`${vouchers.length} Gutscheine exportiert!`);
+}
+
+// ====================================
+// TÄGLICHE EINLÖSUNGEN (KASSENABSCHLUSS)
+// ====================================
+
+// Einlösungen laden und anzeigen
+async function loadAndDisplayRedemptions() {
+    const dateInput = document.getElementById('redemption-date');
+    const displayDiv = document.getElementById('redemptions-display');
+    
+    if (!dateInput || !displayDiv) return;
+    
+    const selectedDate = dateInput.value;
+    
+    // Lade-Anzeige
+    displayDiv.innerHTML = '<p style="text-align: center; color: #888;">Lädt...</p>';
+    
+    // Daten laden
+    const result = await loadRedemptionsByDate(selectedDate);
+    
+    if (!result) {
+        displayDiv.innerHTML = '<p style="text-align: center; color: red;">Fehler beim Laden</p>';
+        return;
+    }
+    
+    // Anzeigen
+    if (result.count === 0) {
+        displayDiv.innerHTML = `
+            <div style="text-align: center; padding: 30px; color: #888;">
+                📅 Keine Einlösungen am ${new Date(selectedDate).toLocaleDateString('de-DE')}
+            </div>
+        `;
+        return;
+    }
+    
+    // Liste erstellen
+    let html = `
+        <!-- GESAMTSUMME -->
+        <div style="background-color: #6B7C59; color: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; text-align: center;">
+            <div style="font-size: 14px; margin-bottom: 5px;">Kassenabschluss</div>
+            <div style="font-size: 36px; font-weight: bold;">${result.totalAmount.toFixed(2)} €</div>
+            <div style="font-size: 14px; margin-top: 5px;">${result.count} Einlösungen</div>
+        </div>
+        
+        <!-- TABELLE -->
+        <div style="background-color: white; border-radius: 10px; overflow: hidden;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background-color: #D7C4A3;">
+                        <th style="padding: 12px; text-align: left; color: #8B5A3C;">Uhrzeit</th>
+                        <th style="padding: 12px; text-align: left; color: #8B5A3C;">Code</th>
+                        <th style="padding: 12px; text-align: left; color: #8B5A3C;">Käufer</th>
+                        <th style="padding: 12px; text-align: left; color: #8B5A3C;">Art</th>
+                        <th style="padding: 12px; text-align: right; color: #8B5A3C;">Betrag</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+    
+    result.transactions.forEach(t => {
+        const time = new Date(t.created_at).toLocaleTimeString('de-DE', {
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        const isPartial = t.action === 'partial_redeem';
+        const buyerName = t.vouchers.buyer_name || '-';
+        
+        html += `
+            <tr style="border-bottom: 1px solid #E8D9B6;">
+                <td style="padding: 12px;">${time}</td>
+                <td style="padding: 12px; font-weight: bold;">${t.vouchers.code}</td>
+                <td style="padding: 12px;">${buyerName}</td>
+                <td style="padding: 12px;">${isPartial ? '📊 Teilweise' : '✅ Komplett'}</td>
+                <td style="padding: 12px; text-align: right; font-weight: bold;">${parseFloat(t.amount).toFixed(2)} €</td>
+            </tr>
+        `;
+    });
+    
+    html += `
+                </tbody>
+            </table>
+        </div>
+    `;
+    
+    displayDiv.innerHTML = html;
+}
+
+// CSV-Export der Tages-Einlösungen
+async function exportDailyRedemptions() {
+    const dateInput = document.getElementById('redemption-date');
+    if (!dateInput) return;
+    
+    const selectedDate = dateInput.value;
+    const result = await loadRedemptionsByDate(selectedDate);
+    
+    if (!result || result.count === 0) {
+        alert('Keine Einlösungen zum Exportieren vorhanden.');
+        return;
+    }
+    
+    // CSV erstellen
+    let csv = 'Uhrzeit,Code,Käufer,Art,Betrag (EUR)\n';
+    
+    result.transactions.forEach(t => {
+        const time = new Date(t.created_at).toLocaleTimeString('de-DE');
+        const isPartial = t.action === 'partial_redeem';
+        const buyerName = t.vouchers.buyer_name || '-';
+        const type = isPartial ? 'Teilweise' : 'Komplett';
+        
+        csv += `${time},${t.vouchers.code},${buyerName},${type},${parseFloat(t.amount).toFixed(2)}\n`;
+    });
+    
+    csv += `\nGESAMT:,,,${result.totalAmount.toFixed(2)}\n`;
+    
+    // Download
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', `kassenabschluss-${selectedDate}.csv`);
+    link.style.visibility = 'hidden';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 }
