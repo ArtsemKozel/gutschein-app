@@ -275,7 +275,7 @@ function showRedeemVoucher() {
 
 // Gutschein suchen
 async function searchVoucher() {
-    const codeInput = document.getElementById('voucher-code');
+    const codeInput = document.getElementById('voucher-code-search');
     const code = codeInput.value.trim();
     
     if (!code) {
