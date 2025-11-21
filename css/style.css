@@ -1102,6 +1102,16 @@ button:active {
     align-items: stretch;
 }
 
+.redemption-date-row button {
+    flex: 0 0 50px;
+    background-color: #D7C4A3;
+    border: 2px solid #E8D9B6;
+}
+
+.redemption-date-row button:hover {
+    background-color: #C4B090;
+}
+
 .redemption-date-row input[type="date"] {
     flex: 1;
     padding: 12px;
@@ -1152,3 +1162,4 @@ button:active {
         padding: 14px;
     }
 }
+

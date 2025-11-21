@@ -992,12 +992,20 @@ async function showAdminDashboard(period = 'all') {
                         <label style="color: #6B7C59; font-weight: bold; margin-bottom: 5px;">Datum auswählen:</label>
         
                         <div class="redemption-date-row">
+                            <button onclick="event.stopPropagation(); changeRedemptionDate(-1)" style="flex: 0 0 50px; padding: 12px; font-size: 20px; background-color: #D7C4A3; border: 2px solid #E8D9B6; border-radius: 8px; cursor: pointer;">
+                                ←
+                            </button>
                             <input 
-                            type="date" 
-                            id="redemption-date" 
-                            value="${new Date().toISOString().split('T')[0]}"
-                            onclick="event.stopPropagation()"
+                                type="date" 
+                                id="redemption-date" 
+                                value="${new Date().toISOString().split('T')[0]}"
+                                onclick="event.stopPropagation()"
+                                onchange="loadAndDisplayRedemptions()"
+                                style="flex: 1; padding: 12px; border: 2px solid #E8D9B6; border-radius: 8px; font-size: 16px;"
                             >
+                            <button onclick="event.stopPropagation(); changeRedemptionDate(1)" style="flex: 0 0 50px; padding: 12px; font-size: 20px; background-color: #D7C4A3; border: 2px solid #E8D9B6; border-radius: 8px; cursor: pointer;">
+                            →
+                            </button>
                         </div>
         
                         <div class="redemption-button-row">
@@ -1578,6 +1586,24 @@ async function loadAndDisplayRedemptions() {
     `;
     
     displayDiv.innerHTML = html;
+}
+
+// Datum um X Tage ändern (z.B. -1 für gestern, +1 für morgen)
+function changeRedemptionDate(days) {
+    const dateInput = document.getElementById('redemption-date');
+    if (!dateInput) return;
+    
+    // Aktuelles Datum holen
+    const currentDate = new Date(dateInput.value);
+    
+    // Tage addieren/subtrahieren
+    currentDate.setDate(currentDate.getDate() + days);
+    
+    // Neues Datum setzen (Format: YYYY-MM-DD)
+    dateInput.value = currentDate.toISOString().split('T')[0];
+    
+    // Daten automatisch laden
+    loadAndDisplayRedemptions();
 }
 
 // CSV-Export der Tages-Einlösungen
