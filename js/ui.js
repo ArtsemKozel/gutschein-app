@@ -1130,10 +1130,15 @@ function onScanSuccess(decodedText) {
     stopQRScanner();
     
     // Code ins Suchfeld eintragen
-    document.getElementById('voucher-code-search').value = decodedText;
+    const inputField = document.getElementById('voucher-code-search');
+    if (inputField) {
+        inputField.value = decodedText;
+    }
     
-    // Automatisch suchen
-    searchVoucher();
+    // Kurz warten und dann automatisch suchen
+    setTimeout(() => {
+        searchVoucher();
+    }, 300);
 }
 
 // Scan-Fehler (ignorieren, passiert ständig)
