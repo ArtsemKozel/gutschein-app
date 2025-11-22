@@ -886,6 +886,7 @@ async function showAdminDashboard(period = 'all') {
             
             <div class="action-buttons">
                 <button onclick="showVoucherList()">📋 Alle Gutscheine</button>
+                <button onclick="showTemplateManager()">📑 Templates</button>
             </div>
             
             <!-- NEU: ZEITRAUM-FILTER -->
@@ -2045,4 +2046,73 @@ function changeAdminPassword() {
     
     alert('✅ Passwort erfolgreich geändert!');
     showAdminDashboard();
+}
+
+// ====================================
+// TEMPLATE-VERWALTUNG
+// ====================================
+
+// Template-Manager anzeigen
+function showTemplateManager() {
+    if (!isAdmin()) {
+        showAdminLogin();
+        return;
+    }
+    
+    console.log('Zeige Template-Manager...');
+    
+    // Templates aus localStorage laden
+    const templates = loadTemplates();
+    
+    const app = document.getElementById('app');
+    
+    app.innerHTML = `
+        <div class="template-manager">
+            <div class="list-header">
+                <h2>📑 Template-Verwaltung</h2>
+                <button onclick="showAdminDashboard()">← Zurück</button>
+            </div>
+            
+            <div class="action-buttons">
+                <button onclick="showCreateTemplate()">➕ Neues Template</button>
+            </div>
+            
+            <div class="template-list">
+                ${templates.length === 0 ? `
+                    <div style="text-align: center; padding: 40px; color: #8B5A3C;">
+                        <p>Noch keine Templates vorhanden.</p>
+                        <p>Erstelle dein erstes Template!</p>
+                    </div>
+                ` : templates.map(template => `
+                    <div class="template-card">
+                        <div class="template-info">
+                            <h3>${template.name}</h3>
+                            <p style="font-size: 14px; color: #666;">
+                                Format: ${template.width} x ${template.height} px
+                            </p>
+                        </div>
+                        <div class="template-actions">
+                            <button onclick="editTemplate('${template.id}')" style="background-color: #A67C52;">
+                                ✏️ Bearbeiten
+                            </button>
+                            <button onclick="deleteTemplate('${template.id}')" style="background-color: #8B5A3C;">
+                                🗑️ Löschen
+                            </button>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+}
+
+// Templates aus localStorage laden
+function loadTemplates() {
+    const stored = localStorage.getItem('voucherTemplates');
+    return stored ? JSON.parse(stored) : [];
+}
+
+// Templates in localStorage speichern
+function saveTemplates(templates) {
+    localStorage.setItem('voucherTemplates', JSON.stringify(templates));
 }
