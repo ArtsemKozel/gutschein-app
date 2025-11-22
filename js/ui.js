@@ -884,6 +884,12 @@ async function showAdminDashboard(period = 'all') {
         return;
     }
     
+    // Aktuelle expanded-States merken (vor dem Neurendern)
+    const wasStatsExpanded = document.getElementById('box-stats')?.classList.contains('expanded');
+    const wasVerwaltungExpanded = document.getElementById('box-verwaltung')?.classList.contains('expanded');
+    console.log('DEBUG: Stats war expanded?', wasStatsExpanded);
+    console.log('DEBUG: Verwaltung war expanded?', wasVerwaltungExpanded);
+    
     console.log('Zeige Admin-Dashboard...');
     
     // Admin-Button aktualisieren
@@ -916,7 +922,7 @@ async function showAdminDashboard(period = 'all') {
             </div>
             
             <!-- BOX 2: STATISTIKEN (KLAPPBAR) -->
-            <div class="stats-section" id="box-stats" onclick="toggleStatsSection('box-stats')" style="background: #F6EAD2; padding: 25px; border-radius: 8px; margin-bottom: 25px; border: 2px solid #6B7C59;">
+            <div class="stats-section ${wasStatsExpanded ? 'expanded' : ''}" id="box-stats" onclick="toggleStatsSection('box-stats')" style="background: #F6EAD2; padding: 25px; border-radius: 8px; margin-bottom: 25px; border: 2px solid #6B7C59;">
                 <div class="stats-header">
                     <div class="stats-title" style="display: flex; align-items: center; gap: 10px;">
                         <span class="stats-arrow">▶</span>
@@ -1082,24 +1088,22 @@ async function showAdminDashboard(period = 'all') {
                             <span>Diagramme</span>
                         </div>
                     </div>
-                    <div class="stats-content">
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
-                            <div>
-                                <h4 style="text-align: center; margin-bottom: 10px;">Status-Verteilung</h4>
-                                <canvas id="status-chart"></canvas>
-                            </div>
-                            <div>
-                                <h4 style="text-align: center; margin-bottom: 10px;">Werte-Vergleich</h4>
-                                <canvas id="values-chart"></canvas>
-                            </div>
+                    <div class="stats-content" onclick="event.stopPropagation()">
+                        <div class="action-buttons">
+                            <button onclick="event.stopPropagation(); showChartPopup('status', ${JSON.stringify(stats).replace(/"/g, '&quot;')})" style="background-color: #6B7C59;">
+                                📊 Status-Diagramm anzeigen
+                            </button>
+                            <button onclick="event.stopPropagation(); showChartPopup('values', ${JSON.stringify(stats).replace(/"/g, '&quot;')})" style="background-color: #A67C52;">
+                                📊 Werte-Diagramm anzeigen
+                            </button>
                         </div>
                     </div>
                 </div>
-                </div>
             </div>
+        </div>
             
             <!-- BOX 3: VERWALTUNG (KLAPPBAR) -->
-            <div class="stats-section" id="box-verwaltung" onclick="toggleStatsSection('box-verwaltung')" style="background: #F6EAD2; padding: 25px; border-radius: 8px; margin-bottom: 25px; border: 2px solid #6B7C59;">
+            <div class="stats-section ${wasVerwaltungExpanded ? 'expanded' : ''}" id="box-verwaltung" onclick="toggleStatsSection('box-verwaltung')" style="background: #F6EAD2; padding: 25px; border-radius: 8px; margin-bottom: 25px; border: 2px solid #6B7C59;">
                 <div class="stats-header">
                     <div class="stats-title" style="display: flex; align-items: center; gap: 10px;">
                         <span class="stats-arrow">▶</span>
@@ -1122,12 +1126,6 @@ async function showAdminDashboard(period = 'all') {
             </div>
         </div>
     `;
-    
-    // Diagramme initialisieren
-    setTimeout(() => {
-        createStatusChart(stats);
-        createValuesChart(stats);
-    }, 100);
 }
 
 // Diagramme rendern
@@ -4015,6 +4013,167 @@ function createValuesChart(stats) {
             scales: {
                 y: {
                     beginAtZero: true
+                }
+            }
+        }
+    });
+}
+
+// ====================================
+// DIAGRAMM-POPUPS
+// ====================================
+
+// Diagramm-Popup anzeigen
+function showChartPopup(type, stats) {
+    console.log('Zeige Diagramm-Popup:', type);
+    
+    // Modal erstellen
+    const modal = document.createElement('div');
+    modal.id = 'chart-popup-modal';
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    `;
+    
+    const title = type === 'status' ? 'Status-Verteilung' : 'Werte-Vergleich';
+    
+    modal.innerHTML = `
+        <div style="background: white; border-radius: 8px; width: 100%; max-width: 600px; max-height: 90vh; display: flex; flex-direction: column;">
+            <div style="padding: 20px; border-bottom: 2px solid #6B7C59; display: flex; justify-content: space-between; align-items: center;">
+                <h2 style="margin: 0; color: #6B7C59;">📊 ${title}</h2>
+                <button onclick="closeChartPopup()" style="background-color: #8B5A3C; padding: 10px 20px; font-size: 18px; border-radius: 8px;">
+                    ✕
+                </button>
+            </div>
+            <div style="flex: 1; overflow: auto; padding: 30px; display: flex; align-items: center; justify-content: center;">
+                <canvas id="popup-chart" style="max-width: 100%; max-height: 400px;"></canvas>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Schließen bei Klick auf Hintergrund
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            closeChartPopup();
+        }
+    });
+    
+    // Diagramm erstellen
+    setTimeout(() => {
+        if (type === 'status') {
+            createPopupStatusChart(stats);
+        } else {
+            createPopupValuesChart(stats);
+        }
+    }, 100);
+}
+
+// Popup schließen
+function closeChartPopup() {
+    const modal = document.getElementById('chart-popup-modal');
+    if (modal) {
+        // Chart-Instanz zerstören
+        if (window.popupChartInstance) {
+            window.popupChartInstance.destroy();
+            window.popupChartInstance = null;
+        }
+        modal.remove();
+    }
+}
+
+// Status-Diagramm im Popup
+function createPopupStatusChart(stats) {
+    const canvas = document.getElementById('popup-chart');
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    
+    if (window.popupChartInstance) {
+        window.popupChartInstance.destroy();
+    }
+    
+    window.popupChartInstance = new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: ['Aktiv', 'Eingelöst', 'Abgelaufen'],
+            datasets: [{
+                data: [stats.active, stats.redeemed, stats.expired],
+                backgroundColor: ['#6B7C59', '#A67C52', '#8B5A3C']
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        font: {
+                            size: 14
+                        },
+                        padding: 15
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Werte-Diagramm im Popup
+function createPopupValuesChart(stats) {
+    const canvas = document.getElementById('popup-chart');
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    
+    if (window.popupChartInstance) {
+        window.popupChartInstance.destroy();
+    }
+    
+    window.popupChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['Aktiv', 'Eingelöst', 'Abgelaufen'],
+            datasets: [{
+                label: 'Wert in €',
+                data: [stats.activeValue, stats.redeemedValue, stats.expiredValue],
+                backgroundColor: ['#6B7C59', '#A67C52', '#8B5A3C']
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        font: {
+                            size: 12
+                        }
+                    }
+                },
+                x: {
+                    ticks: {
+                        font: {
+                            size: 12
+                        }
+                    }
                 }
             }
         }
