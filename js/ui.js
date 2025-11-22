@@ -95,6 +95,19 @@ function showCreateVoucher() {
                         <option value="email">Per E-Mail</option>
                     </select>
                 </div>
+
+                <div class="form-group">
+                    <label for="voucher-template">PDF-Template</label>
+                    <select id="voucher-template">
+                        <option value="default">Standard (Code-Design)</option>
+                        ${loadTemplates().map(t => `
+                            <option value="${t.id}">${t.name}</option>
+                        `).join('')}
+                    </select>
+                    <small style="color: #666; display: block; margin-top: 5px;">
+                        Wähle ein Template oder nutze das Standard-Design
+                    </small>
+                </div>
                 
                 <div class="form-group">
                     <label for="voucher-notes">Notizen (optional)</label>
@@ -124,6 +137,7 @@ async function handleCreateVoucher(event) {
     const buyerEmail = document.getElementById('buyer-email').value.trim();
     const deliveryMethod = document.getElementById('delivery-method').value;
     const notes = document.getElementById('voucher-notes').value.trim();
+    const templateId = document.getElementById('voucher-template').value;
     
     // Validierung
     if (!value || value <= 0) {
@@ -141,7 +155,13 @@ async function handleCreateVoucher(event) {
     
     if (result.success) {
         // Erfolg - zeige Bestätigung
-        showVoucherCreated(result.voucher);
+        // Wenn Template gewählt: Manuelle Platzierung
+        if (templateId !== 'default') {
+            showManualPlacement(result.voucher, templateId);
+        } else {
+            // Standard-Design: Direkt zur Success-Seite
+            showVoucherCreated(result.voucher, templateId);
+        }
     } else {
         alert('Fehler: ' + result.error);
         submitBtn.disabled = false;
@@ -150,7 +170,7 @@ async function handleCreateVoucher(event) {
 }
 
 // Bestätigung nach Erstellung
-function showVoucherCreated(voucher) {
+function showVoucherCreated(voucher, templateId = 'default') {
     const app = document.getElementById('app');
     
     const expiryDate = new Date(voucher.expires_at).toLocaleDateString('de-DE');
@@ -190,7 +210,8 @@ function showVoucherCreated(voucher) {
             </div>
             
             <div class="action-buttons">
-                <button onclick="generateSimplePDF(${JSON.stringify(voucher).replace(/"/g, '&quot;')})" style="background-color: #A67C52;">📄 Als PDF herunterladen</button>
+                <button onclick="previewVoucherPDF(${JSON.stringify(voucher).replace(/"/g, '&quot;')}, '${templateId}')" style="background-color: #6B7C59;">👁️ Vorschau</button>
+                <button onclick="generateVoucherPDF(${JSON.stringify(voucher).replace(/"/g, '&quot;')}, '${templateId}')" style="background-color: #A67C52;">📄 Herunterladen</button>
                 <button onclick="showCreateVoucher()">+ Weiteren Gutschein</button>
                 <button onclick="showDashboard()">← Zum Dashboard</button>
             </div>
@@ -2250,15 +2271,15 @@ function showTemplateConfiguration(template) {
                 <canvas id="pdf-canvas" style="display: block; width: 100%;"></canvas>
                 
                 <!-- Draggable Felder -->
-                <div id="field-code" class="draggable-field" style="position: absolute; left: ${template.fields.code.x}px; top: ${template.fields.code.y}px; cursor: move; background: rgba(107, 124, 89, 0.7); color: white; padding: 5px 10px; border-radius: 4px; font-size: ${template.fields.code.fontSize}px; touch-action: none;">
+                <div id="field-code" class="draggable-field" style="position: absolute; left: ${template.fields.code.x}px; top: ${template.fields.code.y}px; cursor: move; background: rgba(107, 124, 89, 0.7); color: white; padding: 5px 10px; border-radius: 4px; font-size: ${template.fields.code.fontSize}px; touch-action: none; display: flex; align-items: center; justify-content: center; text-align: center;">
                     📌 CODE
                 </div>
                 
-                <div id="field-value" class="draggable-field" style="position: absolute; left: ${template.fields.value.x}px; top: ${template.fields.value.y}px; cursor: move; background: rgba(139, 90, 60, 0.7); color: white; padding: 5px 10px; border-radius: 4px; font-size: ${template.fields.value.fontSize}px; touch-action: none;">
+                <div id="field-value" class="draggable-field" style="position: absolute; left: ${template.fields.value.x}px; top: ${template.fields.value.y}px; cursor: move; background: rgba(139, 90, 60, 0.7); color: white; padding: 5px 10px; border-radius: 4px; font-size: ${template.fields.value.fontSize}px; touch-action: none; display: flex; align-items: center; justify-content: center; text-align: center;">
                     💰 WERT
                 </div>
                 
-                <div id="field-expiry" class="draggable-field" style="position: absolute; left: ${template.fields.expiryDate.x}px; top: ${template.fields.expiryDate.y}px; cursor: move; background: rgba(107, 124, 89, 0.7); color: white; padding: 5px 10px; border-radius: 4px; font-size: ${template.fields.expiryDate.fontSize}px; touch-action: none;">
+                <div id="field-expiry" class="draggable-field" style="position: absolute; left: ${template.fields.expiryDate.x}px; top: ${template.fields.expiryDate.y}px; cursor: move; background: rgba(107, 124, 89, 0.7); color: white; padding: 5px 10px; border-radius: 4px; font-size: ${template.fields.expiryDate.fontSize}px; touch-action: none; display: flex; align-items: center; justify-content: center; text-align: center;">
                     📅 DATUM
                 </div>
                 
@@ -2284,6 +2305,9 @@ function showTemplateConfiguration(template) {
             
             <!-- Speichern-Button -->
             <div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin: 30px 0;">
+                <button onclick="testTemplatePreview()" style="background-color: #6B7C59; font-size: 18px; padding: 15px 40px;">
+                    📋 Test-Vorschau
+                </button>
                 <button onclick="saveTemplateWithPositions()" style="font-size: 18px; padding: 15px 40px;">
                     💾 Template speichern
                 </button>
@@ -2554,4 +2578,1178 @@ function deselectField() {
     selectedField = null;
     document.getElementById('size-controls').style.display = 'none';
     document.querySelectorAll('.draggable-field').forEach(f => f.style.outline = '');
+}
+
+// Template mit aktuellen Positionen speichern
+function saveTemplateWithPositions() {
+    const template = window.currentTemplate;
+    
+    if (!template) {
+        alert('Fehler: Template-Daten nicht gefunden');
+        return;
+    }
+    
+    // Canvas und Skalierung ermitteln
+    const canvas = document.getElementById('pdf-canvas');
+    const displayWidth = canvas.offsetWidth;
+    const displayHeight = canvas.offsetHeight;
+    const actualWidth = template.width;
+    const actualHeight = template.height;
+    
+    const scaleX = actualWidth / displayWidth;
+    const scaleY = actualHeight / displayHeight;
+    
+    console.log('Skalierung:', scaleX, scaleY);
+    console.log('Display:', displayWidth, 'x', displayHeight);
+    console.log('Actual:', actualWidth, 'x', actualHeight);
+    
+    // Aktuelle Positionen auslesen und umrechnen
+    const codeEl = document.getElementById('field-code');
+    const valueEl = document.getElementById('field-value');
+    const expiryEl = document.getElementById('field-expiry');
+    const qrEl = document.getElementById('field-qr');
+    
+    // Positionen speichern (in PDF-Pixeln)
+    template.fields = {
+        code: {
+            x: Math.round(parseInt(codeEl.style.left) * scaleX),
+            y: Math.round(parseInt(codeEl.style.top) * scaleY),
+            fontSize: Math.round(parseInt(codeEl.style.fontSize) * scaleX)
+        },
+        value: {
+            x: Math.round(parseInt(valueEl.style.left) * scaleX),
+            y: Math.round(parseInt(valueEl.style.top) * scaleY),
+            fontSize: Math.round(parseInt(valueEl.style.fontSize) * scaleX)
+        },
+        expiryDate: {
+            x: Math.round(parseInt(expiryEl.style.left) * scaleX),
+            y: Math.round(parseInt(expiryEl.style.top) * scaleY),
+            fontSize: Math.round(parseInt(expiryEl.style.fontSize) * scaleX)
+        },
+        qrCode: {
+            x: Math.round(parseInt(qrEl.style.left) * scaleX),
+            y: Math.round(parseInt(qrEl.style.top) * scaleY),
+            size: Math.round(parseInt(qrEl.style.width) * scaleX)
+        }
+    };
+    
+    console.log('Gespeicherte Felder:', template.fields);
+    
+    // Eindeutige ID generieren (falls noch temp)
+    if (template.id.startsWith('temp-')) {
+        template.id = 'template-' + Date.now();
+    }
+    
+    // Templates laden
+    const templates = loadTemplates();
+    
+    // Prüfen ob Template schon existiert (beim Bearbeiten)
+    const existingIndex = templates.findIndex(t => t.id === template.id);
+    
+    if (existingIndex >= 0) {
+        // Update
+        templates[existingIndex] = template;
+    } else {
+        // Neu hinzufügen
+        templates.push(template);
+    }
+    
+    // Speichern
+    saveTemplates(templates);
+    
+    console.log('Template gespeichert:', template);
+    
+    alert('✅ Template "' + template.name + '" erfolgreich gespeichert!');
+    
+    // Zurück zum Template-Manager
+    showTemplateManager();
+}
+
+// Template bearbeiten
+function editTemplate(templateId) {
+    const templates = loadTemplates();
+    const template = templates.find(t => t.id === templateId);
+    
+    if (!template) {
+        alert('Template nicht gefunden');
+        return;
+    }
+    
+    // Zur Konfiguration
+    showTemplateConfiguration(template);
+}
+
+// Template löschen
+function deleteTemplate(templateId) {
+    if (!confirm('Template wirklich löschen?')) {
+        return;
+    }
+    
+    let templates = loadTemplates();
+    templates = templates.filter(t => t.id !== templateId);
+    
+    saveTemplates(templates);
+    
+    alert('✅ Template gelöscht');
+    
+    // Liste neu laden
+    showTemplateManager();
+}
+
+// ====================================
+// PDF MIT TEMPLATE GENERIEREN
+// ====================================
+
+// Haupt-Funktion: PDF generieren (Template oder Standard)
+async function generateVoucherPDF(voucher, templateId = 'default') {
+    console.log('Generiere PDF mit Template:', templateId);
+    
+    if (templateId === 'default') {
+        // Standard-Design verwenden
+        await generateSimplePDF(voucher);
+    } else {
+        // Template verwenden
+        await generatePDFWithTemplate(voucher, templateId);
+    }
+}
+
+// PDF mit Template erstellen
+async function generatePDFWithTemplate(voucher, templateId) {
+    try {
+        console.log('Lade Template:', templateId);
+        
+        // Template laden
+        const templates = loadTemplates();
+        const template = templates.find(t => t.id === templateId);
+        
+        if (!template) {
+            alert('Template nicht gefunden! Verwende Standard-Design.');
+            await generateSimplePDF(voucher);
+            return;
+        }
+        
+        const { PDFDocument, rgb, StandardFonts } = PDFLib;
+        
+        // Template-PDF laden
+        const base64Data = template.pdfData.split(',')[1];
+        const binaryString = atob(base64Data);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+        }
+        
+        const pdfDoc = await PDFDocument.load(bytes);
+        const page = pdfDoc.getPages()[0];
+        const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+        const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+        
+        const { width, height } = page.getSize();
+        
+        console.log('Template geladen, Größe:', width, 'x', height);
+        
+        // GUTSCHEIN-CODE einfügen
+        page.drawText(voucher.code, {
+            x: template.fields.code.x,
+            y: height - template.fields.code.y, // Y-Koordinate umrechnen (PDF = unten 0)
+            size: template.fields.code.fontSize,
+            font: fontBold,
+            color: rgb(0, 0, 0),
+        });
+        
+        // WERT einfügen
+        const valueText = `${parseFloat(voucher.original_value).toFixed(2)} €`;
+        page.drawText(valueText, {
+            x: template.fields.value.x,
+            y: height - template.fields.value.y,
+            size: template.fields.value.fontSize,
+            font: fontBold,
+            color: rgb(0, 0, 0),
+        });
+        
+        // GÜLTIGKEITSDATUM einfügen
+        const expiryDate = new Date(voucher.expires_at).toLocaleDateString('de-DE');
+        page.drawText(expiryDate, {
+            x: template.fields.expiryDate.x,
+            y: height - template.fields.expiryDate.y,
+            size: template.fields.expiryDate.fontSize,
+            font: font,
+            color: rgb(0, 0, 0),
+        });
+        
+        // QR-CODE einfügen
+        const qrContainer = document.getElementById('qr-code');
+        const qrCanvas = qrContainer ? qrContainer.querySelector('canvas') : null;
+        
+        if (qrCanvas) {
+            try {
+                const qrDataUrl = qrCanvas.toDataURL('image/png');
+                const qrImageBytes = await fetch(qrDataUrl).then(res => res.arrayBuffer());
+                const qrPdfImage = await pdfDoc.embedPng(qrImageBytes);
+                
+                const qrSize = template.fields.qrCode.size;
+                
+                page.drawImage(qrPdfImage, {
+                    x: template.fields.qrCode.x,
+                    y: height - template.fields.qrCode.y - qrSize, // Y anpassen
+                    width: qrSize,
+                    height: qrSize,
+                });
+                
+                console.log('QR-Code eingefügt');
+            } catch (error) {
+                console.log('QR-Code konnte nicht eingefügt werden:', error);
+            }
+        }
+        
+        // PDF speichern und downloaden
+        const pdfBytes = await pdfDoc.save();
+        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+        const url = URL.createObjectURL(blob);
+        
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `Gutschein-${voucher.code}.pdf`;
+        link.click();
+        
+        console.log('PDF mit Template erfolgreich erstellt!');
+        
+    } catch (error) {
+        console.error('Fehler beim PDF-Erstellen mit Template:', error);
+        alert('Fehler beim PDF-Erstellen. Versuche Standard-Design...');
+        await generateSimplePDF(voucher);
+    }
+}
+
+// PDF Vorschau anzeigen
+async function previewVoucherPDF(voucher, templateId = 'default') {
+    console.log('Zeige PDF-Vorschau...');
+    
+    try {
+        // PDF generieren (aber nicht downloaden)
+        const pdfBlob = await generatePDFBlob(voucher, templateId);
+        
+        if (!pdfBlob) {
+            alert('Fehler beim Erstellen der Vorschau');
+            return;
+        }
+        
+        // URL für Blob erstellen
+        const url = URL.createObjectURL(pdfBlob);
+        
+        // Modal/Overlay anzeigen
+        const modal = document.createElement('div');
+        modal.id = 'pdf-preview-modal';
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        `;
+        
+        modal.innerHTML = `
+            <div style="background: white; border-radius: 8px; max-width: 900px; width: 100%; max-height: 90vh; display: flex; flex-direction: column;">
+                <div style="padding: 20px; border-bottom: 2px solid #6B7C59; display: flex; justify-content: space-between; align-items: center;">
+                    <h2 style="margin: 0;">📄 PDF-Vorschau: ${voucher.code}</h2>
+                    <button onclick="closePDFPreview()" style="background-color: #8B5A3C; padding: 10px 20px;">✕ Schließen</button>
+                </div>
+                <div style="flex: 1; overflow: auto; padding: 20px;">
+                    <embed src="${url}" type="application/pdf" width="100%" height="600px" />
+                </div>
+                <div style="padding: 20px; border-top: 2px solid #6B7C59; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                    <button onclick="generateVoucherPDF(${JSON.stringify(voucher).replace(/"/g, '&quot;')}, '${templateId}'); closePDFPreview();" style="background-color: #A67C52; padding: 12px 30px;">
+                        📥 Jetzt herunterladen
+                    </button>
+                    <button onclick="closePDFPreview()" style="background-color: #8B5A3C; padding: 12px 30px;">
+                        Schließen
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Schließen bei Klick auf Hintergrund
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                closePDFPreview();
+            }
+        });
+        
+    } catch (error) {
+        console.error('Fehler bei Vorschau:', error);
+        alert('Fehler beim Erstellen der Vorschau: ' + error.message);
+    }
+}
+
+// Vorschau schließen
+function closePDFPreview() {
+    const modal = document.getElementById('pdf-preview-modal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+// PDF als Blob generieren (ohne Download)
+async function generatePDFBlob(voucher, templateId = 'default') {
+    try {
+        if (templateId === 'default') {
+            return await generateSimplePDFBlob(voucher);
+        } else {
+            return await generatePDFWithTemplateBlob(voucher, templateId);
+        }
+    } catch (error) {
+        console.error('Fehler beim PDF-Blob erstellen:', error);
+        return null;
+    }
+}
+
+// Standard-PDF als Blob (ohne Download)
+async function generateSimplePDFBlob(voucher) {
+    // Kopiere die Logik von generateSimplePDF, aber return blob statt download
+    const { PDFDocument, rgb, StandardFonts } = PDFLib;
+    
+    const pdfDoc = await PDFDocument.create();
+    const page = pdfDoc.addPage([595, 842]);
+    const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+    const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+    
+    const { width, height } = page.getSize();
+    
+    // Farben
+    const olivGreen = rgb(0.42, 0.49, 0.35);
+    const beige = rgb(0.91, 0.85, 0.71);
+    const brown = rgb(0.54, 0.35, 0.24);
+    const darkBrown = rgb(0.44, 0.28, 0.19);
+    const lightBeige = rgb(0.96, 0.92, 0.82);
+    
+    // Hintergrund
+    page.drawRectangle({
+        x: 40,
+        y: height - 700,
+        width: width - 80,
+        height: 600,
+        color: lightBeige,
+    });
+    
+    // Obere Linie
+    page.drawRectangle({
+        x: 40,
+        y: height - 110,
+        width: width - 80,
+        height: 4,
+        color: olivGreen,
+    });
+    
+    // Restaurant Name
+    page.drawText('My Heart Beats Vegan', {
+        x: width / 2 - 105,
+        y: height - 80,
+        size: 20,
+        font: fontBold,
+        color: olivGreen,
+    });
+    
+    // Titel
+    page.drawRectangle({
+        x: 80,
+        y: height - 180,
+        width: width - 160,
+        height: 60,
+        color: olivGreen,
+    });
+    
+    page.drawText('GESCHENKGUTSCHEIN', {
+        x: width / 2 - 130,
+        y: height - 160,
+        size: 28,
+        font: fontBold,
+        color: rgb(1, 1, 1),
+    });
+    
+    // Wert
+    const valueText = `${parseFloat(voucher.original_value).toFixed(2)} €`;
+    page.drawText(valueText, {
+        x: width / 2 - 70,
+        y: height - 250,
+        size: 56,
+        font: fontBold,
+        color: brown,
+    });
+    
+    // Code
+    page.drawText('Gutschein-Code:', {
+        x: 100,
+        y: height - 320,
+        size: 12,
+        font: font,
+        color: darkBrown,
+    });
+    
+    page.drawText(voucher.code, {
+        x: 100,
+        y: height - 345,
+        size: 22,
+        font: fontBold,
+        color: rgb(0, 0, 0),
+    });
+    
+    // Gültig bis
+    const expiryDate = new Date(voucher.expires_at).toLocaleDateString('de-DE');
+    page.drawText('Gültig bis:', {
+        x: 100,
+        y: height - 380,
+        size: 12,
+        font: font,
+        color: darkBrown,
+    });
+    
+    page.drawText(expiryDate, {
+        x: 100,
+        y: height - 400,
+        size: 16,
+        font: fontBold,
+        color: rgb(0, 0, 0),
+    });
+    
+    // QR-Code
+    const qrContainer = document.getElementById('qr-code');
+    const qrCanvas = qrContainer ? qrContainer.querySelector('canvas') : null;
+    
+    if (qrCanvas) {
+        try {
+            const qrDataUrl = qrCanvas.toDataURL('image/png');
+            const qrImageBytes = await fetch(qrDataUrl).then(res => res.arrayBuffer());
+            const qrPdfImage = await pdfDoc.embedPng(qrImageBytes);
+            
+            page.drawImage(qrPdfImage, {
+                x: width - 192,
+                y: height - 472,
+                width: 134,
+                height: 134,
+            });
+        } catch (error) {
+            console.log('QR-Code konnte nicht eingefügt werden:', error);
+        }
+    }
+    
+    // Footer
+    page.drawRectangle({
+        x: 40,
+        y: 120,
+        width: width - 80,
+        height: 3,
+        color: olivGreen,
+    });
+    
+    page.drawText('Einlösbar im Restaurant My Heart Beats Vegan', {
+        x: width / 2 - 150,
+        y: 90,
+        size: 11,
+        font: font,
+        color: darkBrown,
+    });
+    
+    page.drawText('Nicht mit anderen Aktionen kombinierbar • Keine Barauszahlung möglich', {
+        x: width / 2 - 180,
+        y: 70,
+        size: 9,
+        font: font,
+        color: rgb(0.5, 0.5, 0.5),
+    });
+    
+    const pdfBytes = await pdfDoc.save();
+    return new Blob([pdfBytes], { type: 'application/pdf' });
+}
+
+// Template-PDF als Blob (ohne Download)
+async function generatePDFWithTemplateBlob(voucher, templateId) {
+    const templates = loadTemplates();
+    const template = templates.find(t => t.id === templateId);
+    
+    if (!template) {
+        return await generateSimplePDFBlob(voucher);
+    }
+    
+    const { PDFDocument, rgb, StandardFonts } = PDFLib;
+    
+    // Template laden
+    const base64Data = template.pdfData.split(',')[1];
+    const binaryString = atob(base64Data);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+    }
+    
+    const pdfDoc = await PDFDocument.load(bytes);
+    const page = pdfDoc.getPages()[0];
+    const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+    const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+    
+    const { width, height } = page.getSize();
+    
+    // Code einfügen (ZENTRIERT)
+    const codeText = voucher.code;
+    const codeWidth = font.widthOfTextAtSize(codeText, template.fields.code.fontSize);
+    page.drawText(codeText, {
+        x: template.fields.code.x - (codeWidth / 2),
+        y: height - template.fields.code.y,
+        size: template.fields.code.fontSize,
+        font: fontBold,
+        color: rgb(0, 0, 0),
+    });
+
+    // Wert einfügen (ZENTRIERT)
+    const valueText = `${parseFloat(voucher.original_value).toFixed(2)} €`;
+    const valueWidth = fontBold.widthOfTextAtSize(valueText, template.fields.value.fontSize);
+    page.drawText(valueText, {
+        x: template.fields.value.x - (valueWidth / 2),
+        y: height - template.fields.value.y,
+        size: template.fields.value.fontSize,
+        font: fontBold,
+        color: rgb(0, 0, 0),
+    });
+
+    // Datum einfügen (ZENTRIERT)
+    const expiryDate = new Date(voucher.expires_at).toLocaleDateString('de-DE');
+    const dateWidth = font.widthOfTextAtSize(expiryDate, template.fields.expiryDate.fontSize);
+    page.drawText(expiryDate, {
+        x: template.fields.expiryDate.x - (dateWidth / 2),
+        y: height - template.fields.expiryDate.y,
+        size: template.fields.expiryDate.fontSize,
+        font: font,
+        color: rgb(0, 0, 0),
+    });
+    
+    // QR-Code
+    const qrContainer = document.getElementById('qr-code');
+    const qrCanvas = qrContainer ? qrContainer.querySelector('canvas') : null;
+    
+    if (qrCanvas) {
+        try {
+            const qrDataUrl = qrCanvas.toDataURL('image/png');
+            const qrImageBytes = await fetch(qrDataUrl).then(res => res.arrayBuffer());
+            const qrPdfImage = await pdfDoc.embedPng(qrImageBytes);
+            
+            const qrSize = template.fields.qrCode.size;
+            
+            page.drawImage(qrPdfImage, {
+                x: template.fields.qrCode.x,
+                y: height - template.fields.qrCode.y - qrSize,
+                width: qrSize,
+                height: qrSize,
+            });
+        } catch (error) {
+            console.log('QR-Code konnte nicht eingefügt werden:', error);
+        }
+    }
+    
+    const pdfBytes = await pdfDoc.save();
+    return new Blob([pdfBytes], { type: 'application/pdf' });
+}
+
+// ====================================
+// TEMPLATE TEST-VORSCHAU
+// ====================================
+
+// Test-Vorschau mit Beispiel-Daten
+async function testTemplatePreview() {
+    console.log('Erstelle Test-Vorschau...');
+    
+    const template = window.currentTemplate;
+    
+    if (!template) {
+        alert('Fehler: Template-Daten nicht gefunden');
+        return;
+    }
+    
+    // Aktuelle Positionen temporär speichern
+    const canvas = document.getElementById('pdf-canvas');
+    const displayWidth = canvas.offsetWidth;
+    const displayHeight = canvas.offsetHeight;
+    const actualWidth = template.width;
+    const actualHeight = template.height;
+    
+    const scaleX = actualWidth / displayWidth;
+    const scaleY = actualHeight / displayHeight;
+    
+    const codeEl = document.getElementById('field-code');
+    const valueEl = document.getElementById('field-value');
+    const expiryEl = document.getElementById('field-expiry');
+    const qrEl = document.getElementById('field-qr');
+    
+    // Temporäres Template mit aktuellen Positionen
+    const testTemplate = {
+        ...template,
+        fields: {
+            code: {
+                x: Math.round(parseInt(codeEl.style.left) * scaleX),
+                y: Math.round(parseInt(codeEl.style.top) * scaleY),
+                fontSize: Math.round(parseInt(codeEl.style.fontSize) * scaleX)
+            },
+            value: {
+                x: Math.round(parseInt(valueEl.style.left) * scaleX),
+                y: Math.round(parseInt(valueEl.style.top) * scaleY),
+                fontSize: Math.round(parseInt(valueEl.style.fontSize) * scaleX)
+            },
+            expiryDate: {
+                x: Math.round(parseInt(expiryEl.style.left) * scaleX),
+                y: Math.round(parseInt(expiryEl.style.top) * scaleY),
+                fontSize: Math.round(parseInt(expiryEl.style.fontSize) * scaleX)
+            },
+            qrCode: {
+                x: Math.round(parseInt(qrEl.style.left) * scaleX),
+                y: Math.round(parseInt(qrEl.style.top) * scaleY),
+                size: Math.round(parseInt(qrEl.style.width) * scaleX)
+            }
+        }
+    };
+    
+    // Test-Gutschein erstellen
+    const testVoucher = {
+        code: 'GIFT-0001',
+        original_value: 50.00,
+        expires_at: new Date(Date.now() + 2 * 365 * 24 * 60 * 60 * 1000).toISOString() // 2 Jahre
+    };
+    
+    // Test-QR-Code generieren
+    const tempQRContainer = document.createElement('div');
+    tempQRContainer.id = 'temp-qr-code';
+    tempQRContainer.style.display = 'none';
+    document.body.appendChild(tempQRContainer);
+    
+    // QR-Code erstellen
+    new QRCode(tempQRContainer, {
+        text: testVoucher.code,
+        width: 200,
+        height: 200,
+        colorDark: "#000000",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.H
+    });
+    
+    // Kurz warten bis QR-Code gerendert ist
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
+    // PDF generieren
+    try {
+        const pdfBlob = await generateTestPDFWithTemplate(testVoucher, testTemplate, tempQRContainer);
+        
+        if (!pdfBlob) {
+            alert('Fehler beim Erstellen der Test-Vorschau');
+            return;
+        }
+        
+        // URL für Blob erstellen
+        const url = URL.createObjectURL(pdfBlob);
+        
+        // Modal/Overlay anzeigen
+        const modal = document.createElement('div');
+        modal.id = 'test-preview-modal';
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        `;
+        
+        modal.innerHTML = `
+            <div style="background: white; border-radius: 8px; max-width: 900px; width: 100%; max-height: 90vh; display: flex; flex-direction: column;">
+                <div style="padding: 20px; border-bottom: 2px solid #6B7C59; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                    <h2 style="margin: 0;">📋 Test-Vorschau: ${template.name}</h2>
+                    <button onclick="closeTestPreview()" style="background-color: #8B5A3C; padding: 10px 20px;">✕ Schließen</button>
+                </div>
+                <div style="flex: 1; overflow: auto; padding: 20px;">
+                    <p style="color: #666; margin-bottom: 15px;">
+                        <strong>Test-Daten:</strong> GIFT-0001 • 50,00 € • Gültig bis: ${new Date(testVoucher.expires_at).toLocaleDateString('de-DE')}
+                    </p>
+                    <embed src="${url}" type="application/pdf" width="100%" height="600px" />
+                </div>
+                <div style="padding: 20px; border-top: 2px solid #6B7C59; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                    <button onclick="closeTestPreview()" style="background-color: #6B7C59; padding: 12px 30px;">
+                        ← Zurück zur Konfiguration
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Schließen bei Klick auf Hintergrund
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                closeTestPreview();
+            }
+        });
+        
+        // Temp QR-Container aufräumen
+        tempQRContainer.remove();
+        
+    } catch (error) {
+        console.error('Fehler bei Test-Vorschau:', error);
+        alert('Fehler beim Erstellen der Test-Vorschau: ' + error.message);
+        tempQRContainer.remove();
+    }
+}
+
+// Test-Vorschau schließen
+function closeTestPreview() {
+    const modal = document.getElementById('test-preview-modal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+// Test-PDF mit Template generieren
+async function generateTestPDFWithTemplate(voucher, template, qrContainer) {
+    try {
+        const { PDFDocument, rgb, StandardFonts } = PDFLib;
+        
+        // Template laden
+        const base64Data = template.pdfData.split(',')[1];
+        const binaryString = atob(base64Data);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+        }
+        
+        const pdfDoc = await PDFDocument.load(bytes);
+        const page = pdfDoc.getPages()[0];
+        const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+        const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+        
+        const { width, height } = page.getSize();
+        
+        console.log('Test-PDF:', template.fields);
+        
+        // Code einfügen (ZENTRIERT)
+        const codeText = voucher.code;
+        const codeWidth = font.widthOfTextAtSize(codeText, template.fields.code.fontSize);
+        page.drawText(codeText, {
+            x: template.fields.code.x - (codeWidth / 2),
+            y: height - template.fields.code.y,
+            size: template.fields.code.fontSize,
+            font: fontBold,
+            color: rgb(0, 0, 0),
+        });
+
+        // Wert einfügen (ZENTRIERT)
+        const valueText = `${parseFloat(voucher.original_value).toFixed(2)} €`;
+        const valueWidth = fontBold.widthOfTextAtSize(valueText, template.fields.value.fontSize);
+        page.drawText(valueText, {
+            x: template.fields.value.x - (valueWidth / 2),
+            y: height - template.fields.value.y,
+            size: template.fields.value.fontSize,
+            font: fontBold,
+            color: rgb(0, 0, 0),
+        });
+
+        // Datum einfügen (ZENTRIERT)
+        const expiryDate = new Date(voucher.expires_at).toLocaleDateString('de-DE');
+        const dateWidth = font.widthOfTextAtSize(expiryDate, template.fields.expiryDate.fontSize);
+        page.drawText(expiryDate, {
+            x: template.fields.expiryDate.x - (dateWidth / 2),
+            y: height - template.fields.expiryDate.y,
+            size: template.fields.expiryDate.fontSize,
+            font: font,
+            color: rgb(0, 0, 0),
+        });
+        
+        // QR-Code einfügen
+        const qrCanvas = qrContainer ? qrContainer.querySelector('canvas') : null;
+        
+        if (qrCanvas) {
+            try {
+                const qrDataUrl = qrCanvas.toDataURL('image/png');
+                const qrImageBytes = await fetch(qrDataUrl).then(res => res.arrayBuffer());
+                const qrPdfImage = await pdfDoc.embedPng(qrImageBytes);
+                
+                const qrSize = template.fields.qrCode.size;
+                
+                page.drawImage(qrPdfImage, {
+                    x: template.fields.qrCode.x,
+                    y: height - template.fields.qrCode.y - qrSize,
+                    width: qrSize,
+                    height: qrSize,
+                });
+            } catch (error) {
+                console.log('QR-Code konnte nicht eingefügt werden:', error);
+            }
+        }
+        
+        const pdfBytes = await pdfDoc.save();
+        return new Blob([pdfBytes], { type: 'application/pdf' });
+        
+    } catch (error) {
+        console.error('Fehler beim Test-PDF:', error);
+        throw error;
+    }
+}
+
+// ====================================
+// MANUELLE PLATZIERUNG
+// ====================================
+
+// Manuelle Platzierung mit echten Voucher-Daten
+function showManualPlacement(voucher, templateId) {
+    console.log('Zeige manuelle Platzierung für:', voucher.code);
+    
+    // Template laden
+    const templates = loadTemplates();
+    const template = templates.find(t => t.id === templateId);
+    
+    if (!template) {
+        alert('Template nicht gefunden! Verwende Standard-Design.');
+        showVoucherCreated(voucher, 'default');
+        return;
+    }
+    
+    const app = document.getElementById('app');
+    
+    app.innerHTML = `
+        <div class="manual-placement">
+            <div class="list-header">
+                <h2>📍 Gutschein platzieren: ${voucher.code}</h2>
+            </div>
+            
+            <p style="margin-bottom: 20px; color: #666; text-align: center;">
+                <strong>Ziehe die Felder an die gewünschte Position auf dem Gutschein.</strong><br>
+                Die Daten sind bereits ausgefüllt - du siehst genau wie es aussieht!
+            </p>
+            
+            <!-- PDF Canvas Container -->
+            <div style="position: relative; margin: 20px auto; max-width: 800px; border: 2px solid #6B7C59; background: white;">
+                <canvas id="pdf-canvas" style="display: block; width: 100%;"></canvas>
+                
+                <!-- Draggable Felder mit ECHTEN Daten -->
+                <div id="field-code" class="draggable-field" style="position: absolute; left: ${template.fields.code.x}px; top: ${template.fields.code.y}px; cursor: move; background: rgba(107, 124, 89, 0.7); color: white; padding: 5px 10px; border-radius: 4px; font-size: ${template.fields.code.fontSize}px; touch-action: none; display: flex; align-items: center; justify-content: center; text-align: center;">
+                    ${voucher.code}
+                </div>
+                
+                <div id="field-value" class="draggable-field" style="position: absolute; left: ${template.fields.value.x}px; top: ${template.fields.value.y}px; cursor: move; background: rgba(139, 90, 60, 0.7); color: white; padding: 5px 10px; border-radius: 4px; font-size: ${template.fields.value.fontSize}px; touch-action: none; display: flex; align-items: center; justify-content: center; text-align: center;">
+                    ${parseFloat(voucher.original_value).toFixed(2)} €
+                </div>
+                
+                <div id="field-expiry" class="draggable-field" style="position: absolute; left: ${template.fields.expiryDate.x}px; top: ${template.fields.expiryDate.y}px; cursor: move; background: rgba(107, 124, 89, 0.7); color: white; padding: 5px 10px; border-radius: 4px; font-size: ${template.fields.expiryDate.fontSize}px; touch-action: none; display: flex; align-items: center; justify-content: center; text-align: center;">
+                    ${new Date(voucher.expires_at).toLocaleDateString('de-DE')}
+                </div>
+                
+                <div id="field-qr" class="draggable-field" style="position: absolute; left: ${template.fields.qrCode.x}px; top: ${template.fields.qrCode.y}px; cursor: move; background: rgba(139, 90, 60, 0.7); color: white; padding: 5px; border-radius: 4px; width: ${template.fields.qrCode.size}px; height: ${template.fields.qrCode.size}px; display: flex; align-items: center; justify-content: center; touch-action: none;">
+                    📱 QR
+                </div>
+            </div>
+            
+            <!-- Buttons -->
+            <div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin: 30px 0;">
+                <button onclick="previewManualPDF()" style="background-color: #6B7C59; font-size: 18px; padding: 15px 40px;">
+                    👁️ Vorschau
+                </button>
+                <button onclick="downloadManualPDF()" style="background-color: #A67C52; font-size: 18px; padding: 15px 40px;">
+                    📥 Herunterladen
+                </button>
+                <button onclick="showDashboard()" style="background-color: #8B5A3C; padding: 15px 40px;">
+                    Abbrechen
+                </button>
+            </div>
+        </div>
+    `;
+    
+    // PDF rendern
+    renderPDFOnCanvas(template.pdfData, template.width, template.height);
+    
+    // QR-Code generieren
+    setTimeout(() => {
+        const qrContainer = document.createElement('div');
+        qrContainer.id = 'manual-qr-code';
+        qrContainer.style.display = 'none';
+        document.body.appendChild(qrContainer);
+        
+        new QRCode(qrContainer, {
+            text: voucher.code,
+            width: 200,
+            height: 200,
+            colorDark: "#000000",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.H
+        });
+    }, 200);
+    
+    // Drag & Drop initialisieren
+    initDragAndDrop(template);
+    
+    // Daten global speichern
+    window.currentVoucher = voucher;
+    window.currentTemplate = template;
+}
+
+// Vorschau für manuell platzierten Gutschein
+async function previewManualPDF() {
+    const voucher = window.currentVoucher;
+    const template = window.currentTemplate;
+    
+    if (!voucher || !template) {
+        alert('Fehler: Daten nicht gefunden');
+        return;
+    }
+    
+    try {
+        // Aktuelle Positionen auslesen
+        const positions = getManualFieldPositions();
+        
+        // PDF generieren
+        const pdfBlob = await generateManualPDF(voucher, template, positions, false);
+        
+        if (!pdfBlob) {
+            alert('Fehler beim Erstellen der Vorschau');
+            return;
+        }
+        
+        // Vorschau anzeigen
+        const url = URL.createObjectURL(pdfBlob);
+        
+        const modal = document.createElement('div');
+        modal.id = 'manual-preview-modal';
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        `;
+        
+        modal.innerHTML = `
+            <div style="background: white; border-radius: 8px; max-width: 900px; width: 100%; max-height: 90vh; display: flex; flex-direction: column;">
+                <div style="padding: 20px; border-bottom: 2px solid #6B7C59; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                    <h2 style="margin: 0;">👁️ Vorschau: ${voucher.code}</h2>
+                    <button onclick="closeManualPreview()" style="background-color: #8B5A3C; padding: 10px 20px;">✕ Schließen</button>
+                </div>
+                <div style="flex: 1; overflow: auto; padding: 20px;">
+                    <embed src="${url}" type="application/pdf" width="100%" height="600px" />
+                </div>
+                <div style="padding: 20px; border-top: 2px solid #6B7C59; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                    <button onclick="downloadManualPDF(); closeManualPreview();" style="background-color: #A67C52; padding: 12px 30px;">
+                        📥 Jetzt herunterladen
+                    </button>
+                    <button onclick="closeManualPreview()" style="background-color: #8B5A3C; padding: 12px 30px;">
+                        ← Zurück zur Platzierung
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                closeManualPreview();
+            }
+        });
+        
+    } catch (error) {
+        console.error('Fehler bei Vorschau:', error);
+        alert('Fehler beim Erstellen der Vorschau: ' + error.message);
+    }
+}
+
+// Vorschau schließen
+function closeManualPreview() {
+    const modal = document.getElementById('manual-preview-modal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+// Download für manuell platzierten Gutschein
+async function downloadManualPDF() {
+    const voucher = window.currentVoucher;
+    const template = window.currentTemplate;
+    
+    if (!voucher || !template) {
+        alert('Fehler: Daten nicht gefunden');
+        return;
+    }
+    
+    try {
+        // Aktuelle Positionen auslesen
+        const positions = getManualFieldPositions();
+        
+        // PDF generieren und downloaden
+        const pdfBlob = await generateManualPDF(voucher, template, positions, true);
+        
+        if (pdfBlob) {
+            const url = URL.createObjectURL(pdfBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `Gutschein-${voucher.code}.pdf`;
+            link.click();
+            
+            // Erfolg anzeigen
+            alert('✅ Gutschein erfolgreich heruntergeladen!');
+            
+            // Zum Dashboard
+            showDashboard();
+        }
+        
+    } catch (error) {
+        console.error('Fehler beim Download:', error);
+        alert('Fehler beim Download: ' + error.message);
+    }
+}
+
+// Aktuelle Feld-Positionen auslesen
+function getManualFieldPositions() {
+    const template = window.currentTemplate;
+    const canvas = document.getElementById('pdf-canvas');
+    const displayWidth = canvas.offsetWidth;
+    const displayHeight = canvas.offsetHeight;
+    const actualWidth = template.width;
+    const actualHeight = template.height;
+    
+    const scaleX = actualWidth / displayWidth;
+    const scaleY = actualHeight / displayHeight;
+    
+    const codeEl = document.getElementById('field-code');
+    const valueEl = document.getElementById('field-value');
+    const expiryEl = document.getElementById('field-expiry');
+    const qrEl = document.getElementById('field-qr');
+    
+    return {
+        code: {
+            x: Math.round(parseInt(codeEl.style.left) * scaleX),
+            y: Math.round(parseInt(codeEl.style.top) * scaleY),
+            width: Math.round(codeEl.offsetWidth * scaleX),
+            height: Math.round(codeEl.offsetHeight * scaleY),
+            fontSize: Math.round(parseInt(codeEl.style.fontSize) * scaleX)
+        },
+        value: {
+            x: Math.round(parseInt(valueEl.style.left) * scaleX),
+            y: Math.round(parseInt(valueEl.style.top) * scaleY),
+            width: Math.round(valueEl.offsetWidth * scaleX),
+            height: Math.round(valueEl.offsetHeight * scaleY),
+            fontSize: Math.round(parseInt(valueEl.style.fontSize) * scaleX)
+        },
+        expiryDate: {
+            x: Math.round(parseInt(expiryEl.style.left) * scaleX),
+            y: Math.round(parseInt(expiryEl.style.top) * scaleY),
+            width: Math.round(expiryEl.offsetWidth * scaleX),
+            height: Math.round(expiryEl.offsetHeight * scaleY),
+            fontSize: Math.round(parseInt(expiryEl.style.fontSize) * scaleX)
+        },
+        qrCode: {
+            x: Math.round(parseInt(qrEl.style.left) * scaleX),
+            y: Math.round(parseInt(qrEl.style.top) * scaleY),
+            size: Math.round(parseInt(qrEl.style.width) * scaleX)
+        }
+    };
+}
+
+// PDF mit manuellen Positionen generieren
+async function generateManualPDF(voucher, template, positions, download = false) {
+    try {
+        const { PDFDocument, rgb, StandardFonts } = PDFLib;
+        
+        // Template laden
+        const base64Data = template.pdfData.split(',')[1];
+        const binaryString = atob(base64Data);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+        }
+        
+        const pdfDoc = await PDFDocument.load(bytes);
+        const page = pdfDoc.getPages()[0];
+        const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+        const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+        
+        const { width, height } = page.getSize();
+        
+        // Code einfügen (ZENTRIERT in Feld-Mitte)
+        const codeText = voucher.code;
+        const codeWidth = fontBold.widthOfTextAtSize(codeText, positions.code.fontSize);
+        const codeCenterX = positions.code.x + (positions.code.width / 2);
+        const codeCenterY = positions.code.y + (positions.code.height / 2);
+        page.drawText(codeText, {
+            x: codeCenterX - (codeWidth / 2),
+            y: height - codeCenterY - (positions.code.fontSize / 2),
+            size: positions.code.fontSize,
+            font: fontBold,
+            color: rgb(0, 0, 0),
+        });
+
+        // Wert einfügen (ZENTRIERT in Feld-Mitte)
+        const valueText = `${parseFloat(voucher.original_value).toFixed(2)} €`;
+        const valueWidth = fontBold.widthOfTextAtSize(valueText, positions.value.fontSize);
+        const valueCenterX = positions.value.x + (positions.value.width / 2);
+        const valueCenterY = positions.value.y + (positions.value.height / 2);
+        page.drawText(valueText, {
+            x: valueCenterX - (valueWidth / 2),
+            y: height - valueCenterY - (positions.value.fontSize / 2),
+            size: positions.value.fontSize,
+            font: fontBold,
+            color: rgb(0, 0, 0),
+        });
+
+        // Datum einfügen (ZENTRIERT in Feld-Mitte)
+        const expiryDate = new Date(voucher.expires_at).toLocaleDateString('de-DE');
+        const dateWidth = font.widthOfTextAtSize(expiryDate, positions.expiryDate.fontSize);
+        const dateCenterX = positions.expiryDate.x + (positions.expiryDate.width / 2);
+        const dateCenterY = positions.expiryDate.y + (positions.expiryDate.height / 2);
+        page.drawText(expiryDate, {
+            x: dateCenterX - (dateWidth / 2),
+            y: height - dateCenterY - (positions.expiryDate.fontSize / 2),
+            size: positions.expiryDate.fontSize,
+            font: font,
+            color: rgb(0, 0, 0),
+        });
+        
+        // QR-Code einfügen
+        const qrContainer = document.getElementById('manual-qr-code');
+        const qrCanvas = qrContainer ? qrContainer.querySelector('canvas') : null;
+        
+        if (qrCanvas) {
+            try {
+                const qrDataUrl = qrCanvas.toDataURL('image/png');
+                const qrImageBytes = await fetch(qrDataUrl).then(res => res.arrayBuffer());
+                const qrPdfImage = await pdfDoc.embedPng(qrImageBytes);
+                
+                page.drawImage(qrPdfImage, {
+                    x: positions.qrCode.x,
+                    y: height - positions.qrCode.y - positions.qrCode.size,
+                    width: positions.qrCode.size,
+                    height: positions.qrCode.size,
+                });
+            } catch (error) {
+                console.log('QR-Code konnte nicht eingefügt werden:', error);
+            }
+        }
+        
+        const pdfBytes = await pdfDoc.save();
+        return new Blob([pdfBytes], { type: 'application/pdf' });
+        
+    } catch (error) {
+        console.error('Fehler beim PDF erstellen:', error);
+        throw error;
+    }
 }
