@@ -2116,3 +2116,442 @@ function loadTemplates() {
 function saveTemplates(templates) {
     localStorage.setItem('voucherTemplates', JSON.stringify(templates));
 }
+
+// Neues Template erstellen - Formular anzeigen
+function showCreateTemplate() {
+    const app = document.getElementById('app');
+    
+    app.innerHTML = `
+        <div class="create-template">
+            <div class="list-header">
+                <h2>➕ Neues Template</h2>
+                <button onclick="showTemplateManager()">← Zurück</button>
+            </div>
+            
+            <form id="template-form" onsubmit="handleTemplateUpload(event)">
+                <div class="form-group">
+                    <label for="template-name">Template-Name *</label>
+                    <input 
+                        type="text" 
+                        id="template-name" 
+                        required
+                        placeholder="z.B. Geburtstag, Weihnachten, Ostern"
+                    >
+                </div>
+                
+                <div class="form-group">
+                    <label for="template-pdf">PDF-Template hochladen *</label>
+                    <input 
+                        type="file" 
+                        id="template-pdf" 
+                        accept=".pdf"
+                        required
+                    >
+                    <small style="color: #666; display: block; margin-top: 5px;">
+                        Unterstützte Formate: A4, A5, A6 oder individuell
+                    </small>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="submit">Weiter zur Konfiguration →</button>
+                    <button type="button" onclick="showTemplateManager()" style="background-color: #8B5A3C;">
+                        Abbrechen
+                    </button>
+                </div>
+            </form>
+        </div>
+    `;
+}
+
+// Template hochladen und verarbeiten
+async function handleTemplateUpload(event) {
+    event.preventDefault();
+    
+    const nameInput = document.getElementById('template-name');
+    const pdfInput = document.getElementById('template-pdf');
+    
+    const templateName = nameInput.value.trim();
+    const pdfFile = pdfInput.files[0];
+    
+    if (!pdfFile) {
+        alert('Bitte wähle eine PDF-Datei aus.');
+        return;
+    }
+    
+    try {
+        console.log('Lade PDF-Template...');
+        
+        // PDF als ArrayBuffer laden
+        const arrayBuffer = await pdfFile.arrayBuffer();
+        
+        // PDF mit pdf-lib öffnen um Größe zu ermitteln
+        const { PDFDocument } = PDFLib;
+        const pdfDoc = await PDFDocument.load(arrayBuffer);
+        const firstPage = pdfDoc.getPages()[0];
+        const { width, height } = firstPage.getSize();
+        
+        console.log('PDF-Größe:', width, 'x', height);
+        
+        // PDF als Base64 speichern
+        const base64 = await fileToBase64(pdfFile);
+        
+        // Temporäres Template-Objekt erstellen
+        const template = {
+            id: 'temp-' + Date.now(),
+            name: templateName,
+            pdfData: base64,
+            width: width,
+            height: height,
+            fields: {
+                code: { x: 100, y: height - 300, fontSize: 22 },
+                value: { x: 100, y: height - 250, fontSize: 56 },
+                expiryDate: { x: 100, y: height - 400, fontSize: 16 },
+                qrCode: { x: width - 200, y: height - 480, size: 150 }
+            }
+        };
+        
+        // Zur Konfiguration weiterleiten
+        showTemplateConfiguration(template);
+        
+    } catch (error) {
+        console.error('Fehler beim Laden des PDFs:', error);
+        alert('Fehler beim Laden des PDFs: ' + error.message);
+    }
+}
+
+// Datei in Base64 konvertieren
+function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
+// Template-Konfiguration anzeigen (Drag & Drop)
+function showTemplateConfiguration(template) {
+    const app = document.getElementById('app');
+    
+    app.innerHTML = `
+        <div class="template-config">
+            <div class="list-header">
+                <h2>⚙️ Template konfigurieren: ${template.name}</h2>
+                <button onclick="showTemplateManager()">← Abbrechen</button>
+            </div>
+            
+            <p style="margin-bottom: 20px; color: #666;">
+                <strong>📱 Ziehe die Felder an die gewünschte Position auf dem Template.</strong><br>
+                Klicke auf ein Feld um die Größe anzupassen.
+            </p>
+            
+            <!-- PDF Canvas Container -->
+            <div style="position: relative; margin: 20px auto; max-width: 800px; border: 2px solid #6B7C59; background: white;">
+                <canvas id="pdf-canvas" style="display: block; width: 100%;"></canvas>
+                
+                <!-- Draggable Felder -->
+                <div id="field-code" class="draggable-field" style="position: absolute; left: ${template.fields.code.x}px; top: ${template.fields.code.y}px; cursor: move; background: rgba(107, 124, 89, 0.7); color: white; padding: 5px 10px; border-radius: 4px; font-size: ${template.fields.code.fontSize}px; touch-action: none;">
+                    📌 CODE
+                </div>
+                
+                <div id="field-value" class="draggable-field" style="position: absolute; left: ${template.fields.value.x}px; top: ${template.fields.value.y}px; cursor: move; background: rgba(139, 90, 60, 0.7); color: white; padding: 5px 10px; border-radius: 4px; font-size: ${template.fields.value.fontSize}px; touch-action: none;">
+                    💰 WERT
+                </div>
+                
+                <div id="field-expiry" class="draggable-field" style="position: absolute; left: ${template.fields.expiryDate.x}px; top: ${template.fields.expiryDate.y}px; cursor: move; background: rgba(107, 124, 89, 0.7); color: white; padding: 5px 10px; border-radius: 4px; font-size: ${template.fields.expiryDate.fontSize}px; touch-action: none;">
+                    📅 DATUM
+                </div>
+                
+                <div id="field-qr" class="draggable-field" style="position: absolute; left: ${template.fields.qrCode.x}px; top: ${template.fields.qrCode.y}px; cursor: move; background: rgba(139, 90, 60, 0.7); color: white; padding: 5px; border-radius: 4px; width: ${template.fields.qrCode.size}px; height: ${template.fields.qrCode.size}px; display: flex; align-items: center; justify-content: center; touch-action: none;">
+                    📱 QR
+                </div>
+            </div>
+            
+            <!-- Größen-Steuerung -->
+            <div id="size-controls" style="margin: 20px auto; max-width: 800px; padding: 20px; background: #F6EAD2; border-radius: 8px; display: none;">
+                <h3 id="selected-field-name" style="margin-bottom: 15px;">Feld ausgewählt</h3>
+                <div style="display: flex; gap: 20px; align-items: center;">
+                    <div>
+                        <label>Schriftgröße / Größe:</label>
+                        <input type="range" id="size-slider" min="8" max="72" value="14" style="width: 200px;">
+                        <span id="size-value">14</span>px
+                    </div>
+                    <button onclick="deselectField()" style="background-color: #8B5A3C; padding: 8px 16px;">
+                        ✓ Fertig
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Speichern-Button -->
+            <div style="text-align: center; margin: 30px 0;">
+                <button onclick="saveTemplateWithPositions()" style="font-size: 18px; padding: 15px 40px;">
+                    💾 Template speichern
+                </button>
+                <button onclick="showTemplateManager()" style="background-color: #8B5A3C; padding: 15px 40px; margin-left: 10px;">
+                    Abbrechen
+                </button>
+            </div>
+        </div>
+    `;
+    
+    // PDF rendern
+    renderPDFOnCanvas(template.pdfData, template.width, template.height);
+    
+    // Drag & Drop initialisieren
+    initDragAndDrop(template);
+    
+    // Template global speichern für späteres Speichern
+    window.currentTemplate = template;
+}
+
+// PDF auf Canvas rendern
+async function renderPDFOnCanvas(pdfDataUrl, width, height) {
+    try {
+        const canvas = document.getElementById('pdf-canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Canvas-Größe setzen
+        canvas.width = width;
+        canvas.height = height;
+        
+        // PDF als Image laden
+        const img = new Image();
+        img.onload = function() {
+            ctx.drawImage(img, 0, 0, width, height);
+        };
+        img.src = pdfDataUrl;
+        
+    } catch (error) {
+        console.error('Fehler beim Rendern:', error);
+    }
+}
+
+// Drag & Drop initialisieren
+function initDragAndDrop(template) {
+    const fields = ['code', 'value', 'expiry', 'qr'];
+    
+    fields.forEach(fieldName => {
+        const element = document.getElementById(`field-${fieldName}`);
+        if (!element) return;
+        
+        // Resize-Handle hinzufügen
+        const resizeHandle = document.createElement('div');
+        resizeHandle.className = 'resize-handle';
+        resizeHandle.style.cssText = 'position: absolute; right: -5px; bottom: -5px; width: 15px; height: 15px; background: white; border: 2px solid #6B7C59; cursor: nwse-resize; border-radius: 50%; display: none;';
+        element.appendChild(resizeHandle);
+        
+        // Resize-Handle bei Hover zeigen
+        element.addEventListener('mouseenter', () => resizeHandle.style.display = 'block');
+        element.addEventListener('mouseleave', () => {
+            if (!element.classList.contains('resizing')) {
+                resizeHandle.style.display = 'none';
+            }
+        });
+        element.addEventListener('touchstart', () => resizeHandle.style.display = 'block');
+        
+        let isDragging = false;
+        let isResizing = false;
+        let startX, startY, initialLeft, initialTop, initialWidth, initialHeight, initialFontSize;
+        
+        // RESIZE - Mouse Events
+        resizeHandle.addEventListener('mousedown', function(e) {
+            isResizing = true;
+            element.classList.add('resizing');
+            startX = e.clientX;
+            startY = e.clientY;
+            
+            if (fieldName === 'qr') {
+                initialWidth = element.offsetWidth;
+            } else {
+                initialFontSize = parseInt(element.style.fontSize);
+            }
+            
+            e.stopPropagation();
+            e.preventDefault();
+        });
+        
+        // RESIZE - Touch Events
+        resizeHandle.addEventListener('touchstart', function(e) {
+            isResizing = true;
+            element.classList.add('resizing');
+            const touch = e.touches[0];
+            startX = touch.clientX;
+            startY = touch.clientY;
+            
+            if (fieldName === 'qr') {
+                initialWidth = element.offsetWidth;
+            } else {
+                initialFontSize = parseInt(element.style.fontSize);
+            }
+            
+            e.stopPropagation();
+            e.preventDefault();
+        });
+        
+        // DRAG - Mouse Events
+        element.addEventListener('mousedown', function(e) {
+            if (e.target === resizeHandle) return;
+            
+            isDragging = true;
+            startX = e.clientX;
+            startY = e.clientY;
+            initialLeft = element.offsetLeft;
+            initialTop = element.offsetTop;
+            element.style.zIndex = 1000;
+            e.preventDefault();
+        });
+        
+        // DRAG - Touch Events
+        element.addEventListener('touchstart', function(e) {
+            if (e.target === resizeHandle) return;
+            
+            isDragging = true;
+            const touch = e.touches[0];
+            startX = touch.clientX;
+            startY = touch.clientY;
+            initialLeft = element.offsetLeft;
+            initialTop = element.offsetTop;
+            element.style.zIndex = 1000;
+            e.preventDefault();
+        });
+        
+        // MOVE - Mouse
+        document.addEventListener('mousemove', function(e) {
+            if (isResizing) {
+                const deltaX = e.clientX - startX;
+                
+                if (fieldName === 'qr') {
+                    const newSize = Math.max(50, Math.min(300, initialWidth + deltaX));
+                    element.style.width = newSize + 'px';
+                    element.style.height = newSize + 'px';
+                } else {
+                    const newFontSize = Math.max(8, Math.min(72, initialFontSize + Math.floor(deltaX / 3)));
+                    element.style.fontSize = newFontSize + 'px';
+                }
+            }
+            
+            if (isDragging) {
+                const deltaX = e.clientX - startX;
+                const deltaY = e.clientY - startY;
+                
+                element.style.left = (initialLeft + deltaX) + 'px';
+                element.style.top = (initialTop + deltaY) + 'px';
+            }
+        });
+        
+        // MOVE - Touch
+        document.addEventListener('touchmove', function(e) {
+            const touch = e.touches[0];
+            
+            if (isResizing) {
+                const deltaX = touch.clientX - startX;
+                
+                if (fieldName === 'qr') {
+                    const newSize = Math.max(50, Math.min(300, initialWidth + deltaX));
+                    element.style.width = newSize + 'px';
+                    element.style.height = newSize + 'px';
+                } else {
+                    const newFontSize = Math.max(8, Math.min(72, initialFontSize + Math.floor(deltaX / 3)));
+                    element.style.fontSize = newFontSize + 'px';
+                }
+                e.preventDefault();
+            }
+            
+            if (isDragging) {
+                const deltaX = touch.clientX - startX;
+                const deltaY = touch.clientY - startY;
+                
+                element.style.left = (initialLeft + deltaX) + 'px';
+                element.style.top = (initialTop + deltaY) + 'px';
+                e.preventDefault();
+            }
+        });
+        
+        // END - Mouse & Touch
+        document.addEventListener('mouseup', function() {
+            if (isDragging) {
+                isDragging = false;
+                element.style.zIndex = 10;
+            }
+            if (isResizing) {
+                isResizing = false;
+                element.classList.remove('resizing');
+                resizeHandle.style.display = 'none';
+            }
+        });
+        
+        document.addEventListener('touchend', function() {
+            if (isDragging) {
+                isDragging = false;
+                element.style.zIndex = 10;
+            }
+            if (isResizing) {
+                isResizing = false;
+                element.classList.remove('resizing');
+                resizeHandle.style.display = 'none';
+            }
+        });
+    });
+}
+
+// Feld zum Größe-Ändern auswählen
+let selectedField = null;
+
+function selectFieldForSizing(fieldName) {
+    selectedField = fieldName;
+    const element = document.getElementById(`field-${fieldName}`);
+    const controls = document.getElementById('size-controls');
+    const nameDisplay = document.getElementById('selected-field-name');
+    const slider = document.getElementById('size-slider');
+    const valueDisplay = document.getElementById('size-value');
+    
+    // Feldnamen anzeigen
+    const names = {
+        'code': '📌 Gutschein-Code',
+        'value': '💰 Wert',
+        'expiry': '📅 Gültigkeitsdatum',
+        'qr': '📱 QR-Code'
+    };
+    
+    nameDisplay.textContent = names[fieldName];
+    
+    // Aktuelle Größe
+    let currentSize;
+    if (fieldName === 'qr') {
+        currentSize = parseInt(element.style.width);
+        slider.min = 50;
+        slider.max = 300;
+    } else {
+        currentSize = parseInt(element.style.fontSize);
+        slider.min = 8;
+        slider.max = 72;
+    }
+    
+    slider.value = currentSize;
+    valueDisplay.textContent = currentSize;
+    
+    // Slider Event
+    slider.oninput = function() {
+        const newSize = this.value;
+        valueDisplay.textContent = newSize;
+        
+        if (fieldName === 'qr') {
+            element.style.width = newSize + 'px';
+            element.style.height = newSize + 'px';
+        } else {
+            element.style.fontSize = newSize + 'px';
+        }
+    };
+    
+    controls.style.display = 'block';
+    
+    // Highlight
+    document.querySelectorAll('.draggable-field').forEach(f => f.style.outline = '');
+    element.style.outline = '3px solid #6B7C59';
+}
+
+function deselectField() {
+    selectedField = null;
+    document.getElementById('size-controls').style.display = 'none';
+    document.querySelectorAll('.draggable-field').forEach(f => f.style.outline = '');
+}
