@@ -2283,11 +2283,11 @@ function showTemplateConfiguration(template) {
             </div>
             
             <!-- Speichern-Button -->
-            <div style="text-align: center; margin: 30px 0;">
+            <div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin: 30px 0;">
                 <button onclick="saveTemplateWithPositions()" style="font-size: 18px; padding: 15px 40px;">
                     💾 Template speichern
                 </button>
-                <button onclick="showTemplateManager()" style="background-color: #8B5A3C; padding: 15px 40px; margin-left: 10px;">
+                <button onclick="showTemplateManager()" style="background-color: #8B5A3C; padding: 15px 40px;">
                     Abbrechen
                 </button>
             </div>
