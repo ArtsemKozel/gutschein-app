@@ -893,212 +893,241 @@ async function showAdminDashboard(period = 'all') {
     
     app.innerHTML = `
         <div class="dashboard">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+            <!-- HEADER: Clean mit nur Logout -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; flex-wrap: wrap; gap: 10px;">
                 <h2>📊 Admin-Dashboard <span class="admin-badge">ADMIN</span></h2>
-                <div style="display: flex; gap: 10px;">
-                    <button onclick="showChangePassword()" style="background-color: #A67C52;">
-                        🔑 Passwort ändern
-                    </button>
-                    <button onclick="adminLogout()" style="background-color: #8B5A3C;">
-                    🚪 Ausloggen
-                    </button>
-                </div>
-            </div>
-            
-            <div class="action-buttons">
-                <button onclick="showVoucherList()">📋 Alle Gutscheine</button>
-                <button onclick="showTemplateManager()">📑 Templates</button>
-            </div>
-            
-            <!-- NEU: ZEITRAUM-FILTER -->
-            <div class="filter-buttons">
-                <button class="${period === '7days' ? 'active' : ''}" onclick="showAdminDashboard('7days')">
-                    📅 Letzte 7 Tage
-                </button>
-                <button class="${period === 'month' ? 'active' : ''}" onclick="showAdminDashboard('month')">
-                    📅 Dieser Monat
-                </button>
-                <button class="${period === 'year' ? 'active' : ''}" onclick="showAdminDashboard('year')">
-                    📅 Dieses Jahr
-                </button>
-                <button class="${period === 'all' ? 'active' : ''}" onclick="showAdminDashboard('all')">
-                    📅 Gesamt
+                <button onclick="adminLogout()" style="background-color: #8B5A3C; padding: 10px 20px; font-size: 20px; border-radius: 8px;" title="Ausloggen">
+                    ⏻
                 </button>
             </div>
             
-            <!-- KLAPPBAR: STATUS-ÜBERSICHT -->
-            <div class="stats-section" id="stats-status" onclick="toggleStatsSection('stats-status')">
-                <div class="stats-header">
-                    <div class="stats-title">
-                        <span class="stats-arrow">▶</span>
-                        <span>Status-Übersicht</span>
-                    </div>
-                </div>
-                <div class="stats-content">
-                    <div class="stats-grid">
-                        <div class="stat-card">
-                            <div class="stat-label">Aktiv</div>
-                            <div class="stat-value">${stats.active}</div>
-                            <div class="stat-amount">${stats.activeValue.toFixed(2)} €</div>
-                        </div>
-                        
-                        <div class="stat-card">
-                            <div class="stat-label">Eingelöst</div>
-                            <div class="stat-value">${stats.redeemed}</div>
-                            <div class="stat-amount">${stats.redeemedValue.toFixed(2)} €</div>
-                        </div>
-                        
-                        <div class="stat-card">
-                            <div class="stat-label">Abgelaufen</div>
-                            <div class="stat-value">${stats.expired}</div>
-                            <div class="stat-amount">${stats.expiredValue.toFixed(2)} €</div>
-                        </div>
-                    </div>
+            <!-- ========================================= -->
+            <!-- BOX 1: AKTIONEN -->
+            <!-- ========================================= -->
+            <div style="background: #F6EAD2; padding: 25px; border-radius: 8px; margin-bottom: 25px; border: 2px solid #6B7C59;">
+                <h3 style="margin: 0 0 20px 0; color: #6B7C59; font-size: 20px;">
+                    ⚡ Aktionen
+                </h3>
+                <div class="action-buttons">
+                    <button onclick="showVoucherList()">📋 Alle Gutscheine</button>
+                    <button onclick="showTemplateManager()">📑 Templates</button>
+                    <button onclick="showCashRegister()">💰 Kassenabschluss</button>
                 </div>
             </div>
             
-            <!-- KLAPPBAR: KENNZAHLEN -->
-            <div class="stats-section" id="stats-metrics" onclick="toggleStatsSection('stats-metrics')">
+            <!-- BOX 2: STATISTIKEN (KLAPPBAR) -->
+            <div class="stats-section" id="box-stats" onclick="toggleStatsSection('box-stats')" style="background: #F6EAD2; padding: 25px; border-radius: 8px; margin-bottom: 25px; border: 2px solid #6B7C59;">
                 <div class="stats-header">
-                    <div class="stats-title">
+                    <div class="stats-title" style="display: flex; align-items: center; gap: 10px;">
                         <span class="stats-arrow">▶</span>
-                        <span>Kennzahlen</span>
-                    </div>
-                </div>
-                <div class="stats-content">
-                    <div class="stats-grid">
-                        <div class="stat-card">
-                            <div class="stat-label">Gesamt verkauft</div>
-                            <div class="stat-value">${stats.total}</div>
-                            <div class="stat-amount">${stats.totalValue.toFixed(2)} €</div>
-                        </div>
-                        
-                        <div class="stat-card">
-                            <div class="stat-label">Durchschnittswert</div>
-                            <div class="stat-value">${stats.averageValue.toFixed(2)} €</div>
-                            <div class="stat-amount">pro Gutschein</div>
-                        </div>
-                        
-                        <div class="stat-card">
-                            <div class="stat-label">Einlösungsrate</div>
-                            <div class="stat-value">${stats.redemptionRate.toFixed(1)}%</div>
-                            <div class="stat-amount">${stats.redeemed} von ${stats.total}</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- KLAPPBAR: VERSANDARTEN -->
-            <div class="stats-section" id="stats-delivery" onclick="toggleStatsSection('stats-delivery')">
-                <div class="stats-header">
-                    <div class="stats-title">
-                        <span class="stats-arrow">▶</span>
-                        <span>Versandarten</span>
-                    </div>
-                </div>
-                <div class="stats-content">
-                    <div class="stats-grid">
-                        <div class="stat-card">
-                            <div class="stat-label">Vor Ort</div>
-                            <div class="stat-value">${stats.deliveryMethods.in_person}</div>
-                            <div class="stat-amount">verkauft</div>
-                        </div>
-                        
-                        <div class="stat-card">
-                            <div class="stat-label">Per Post</div>
-                            <div class="stat-value">${stats.deliveryMethods.mail}</div>
-                            <div class="stat-amount">verkauft</div>
-                        </div>
-                        
-                        <div class="stat-card">
-                            <div class="stat-label">Per E-Mail</div>
-                            <div class="stat-value">${stats.deliveryMethods.email}</div>
-                            <div class="stat-amount">verkauft</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- KLAPPBAR: TÄGLICHE EINLÖSUNGEN -->
-            <div class="stats-section" id="stats-redemptions" onclick="toggleStatsSection('stats-redemptions')">
-                <div class="stats-header">
-                    <div class="stats-title">
-                        <span class="stats-arrow">▶</span>
-                        <span>Kassenabschluss / Tägliche Einlösungen</span>
+                        <h3 style="margin: 0; color: #6B7C59; font-size: 20px;">📊 Statistiken</h3>
                     </div>
                 </div>
                 <div class="stats-content" onclick="event.stopPropagation()">
-                    <div class="redemption-controls">
-                        <label style="color: #6B7C59; font-weight: bold; margin-bottom: 5px;">Datum auswählen:</label>
-        
-                        <div class="redemption-date-row">
-                            <button onclick="event.stopPropagation(); changeRedemptionDate(-1)" style="flex: 0 0 auto; min-width: 40px; padding: 12px 8px; font-size: 20px; background-color: #D7C4A3; border: 2px solid #E8D9B6; border-radius: 8px; cursor: pointer;">
-                                ←
-                            </button>
-                            <input 
-                                type="date" 
-                                id="redemption-date" 
-                                value="${new Date().toISOString().split('T')[0]}"
-                                onclick="event.stopPropagation()"
-                                onchange="loadAndDisplayRedemptions()"
-                                style="flex: 1; padding: 12px; border: 2px solid #E8D9B6; border-radius: 8px; font-size: 16px;"
-                            >
-                            <button onclick="event.stopPropagation(); changeRedemptionDate(-1)" style="flex: 0 0 auto; min-width: 40px; padding: 12px 8px; font-size: 20px; background-color: #D7C4A3; border: 2px solid #E8D9B6; border-radius: 8px; cursor: pointer;">
-                            →
-                            </button>
-                        </div>
-        
-                        <div class="redemption-button-row">
-                            <button class="redemption-load-btn" onclick="event.stopPropagation(); loadAndDisplayRedemptions()">
-                                🔄 Laden
-                            </button>
-                            <button class="redemption-export-btn" onclick="event.stopPropagation(); exportDailyRedemptions()">
-                                📄 Export
-                            </button>
+                
+                <!-- Zeitraum-Filter -->
+                <div class="filter-buttons" style="margin-bottom: 20px;">
+                    <button class="${period === '7days' ? 'active' : ''}" onclick="showAdminDashboard('7days')">
+                        📅 Letzte 7 Tage
+                    </button>
+                    <button class="${period === 'month' ? 'active' : ''}" onclick="showAdminDashboard('month')">
+                        📅 Dieser Monat
+                    </button>
+                    <button class="${period === 'year' ? 'active' : ''}" onclick="showAdminDashboard('year')">
+                        📅 Dieses Jahr
+                    </button>
+                    <button class="${period === 'all' ? 'active' : ''}" onclick="showAdminDashboard('all')">
+                        📅 Gesamt
+                    </button>
+                </div>
+                
+                <!-- KLAPPBAR: STATUS-ÜBERSICHT -->
+                <div class="stats-section" id="stats-status" onclick="toggleStatsSection('stats-status')">
+                    <div class="stats-header">
+                        <div class="stats-title">
+                            <span class="stats-arrow">▶</span>
+                            <span>Status-Übersicht</span>
                         </div>
                     </div>
-    
-                    <div id="redemptions-display">
-                        <div class="redemption-hint">Wähle ein Datum und klicke "Laden"</div>
+                    <div class="stats-content">
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-label">Aktiv</div>
+                                <div class="stat-value">${stats.active}</div>
+                                <div class="stat-amount">${stats.activeValue.toFixed(2)} €</div>
+                            </div>
+                            
+                            <div class="stat-card">
+                                <div class="stat-label">Eingelöst</div>
+                                <div class="stat-value">${stats.redeemed}</div>
+                                <div class="stat-amount">${stats.redeemedValue.toFixed(2)} €</div>
+                            </div>
+                            
+                            <div class="stat-card">
+                                <div class="stat-label">Abgelaufen</div>
+                                <div class="stat-value">${stats.expired}</div>
+                                <div class="stat-amount">${stats.expiredValue.toFixed(2)} €</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
+                
+                <!-- KLAPPBAR: KENNZAHLEN -->
+                <div class="stats-section" id="stats-metrics" onclick="toggleStatsSection('stats-metrics')">
+                    <div class="stats-header">
+                        <div class="stats-title">
+                            <span class="stats-arrow">▶</span>
+                            <span>Kennzahlen</span>
+                        </div>
+                    </div>
+                    <div class="stats-content">
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-label">Gesamt verkauft</div>
+                                <div class="stat-value">${stats.total}</div>
+                                <div class="stat-amount">${stats.totalValue.toFixed(2)} €</div>
+                            </div>
+                            
+                            <div class="stat-card">
+                                <div class="stat-label">Durchschnittswert</div>
+                                <div class="stat-value">${stats.averageValue.toFixed(2)} €</div>
+                            </div>
+                            
+                            <div class="stat-card">
+                                <div class="stat-label">Einlösungsrate</div>
+                                <div class="stat-value">${stats.redemptionRate.toFixed(1)} %</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- KLAPPBAR: VERSANDARTEN -->
+                <div class="stats-section" id="stats-delivery" onclick="toggleStatsSection('stats-delivery')">
+                    <div class="stats-header">
+                        <div class="stats-title">
+                            <span class="stats-arrow">▶</span>
+                            <span>Versandarten</span>
+                        </div>
+                    </div>
+                    <div class="stats-content">
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-label">Vor Ort</div>
+                                <div class="stat-value">${stats.deliveryMethods.in_person}</div>
+                            </div>
+                            
+                            <div class="stat-card">
+                                <div class="stat-label">Per Post</div>
+                                <div class="stat-value">${stats.deliveryMethods.mail}</div>
+                            </div>
+                            
+                            <div class="stat-card">
+                                <div class="stat-label">Per E-Mail</div>
+                                <div class="stat-value">${stats.deliveryMethods.email}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- KLAPPBAR: KASSENABSCHLUSS -->
+                <div class="stats-section" id="stats-redemptions" onclick="toggleStatsSection('stats-redemptions')">
+                    <div class="stats-header">
+                        <div class="stats-title">
+                            <span class="stats-arrow">▶</span>
+                            <span>Kassenabschluss / Tägliche Einlösungen</span>
+                        </div>
+                    </div>
+                    <div class="stats-content" onclick="event.stopPropagation()">
+                        <div class="redemption-controls">
+                            <label style="color: #6B7C59; font-weight: bold; margin-bottom: 5px;">Datum auswählen:</label>
 
-            <!-- KLAPPBAR: DIAGRAMME -->
-            <div class="stats-section" id="stats-charts" onclick="toggleStatsSection('stats-charts')">
-                <div class="stats-header">
-                    <div class="stats-title">
-                        <span class="stats-arrow">▶</span>
-                        <span>Visuelle Diagramme</span>
+                            <div class="redemption-date-row">
+                                <button onclick="event.stopPropagation(); changeRedemptionDate(-1)" style="flex: 0 0 auto; min-width: 40px; padding: 12px 8px; font-size: 20px; background-color: #D7C4A3; border: 2px solid #E8D9B6; border-radius: 8px; cursor: pointer;">
+                                ←
+                                </button>
+                                <input 
+                                    type="date" 
+                                    id="redemption-date" 
+                                    value="${new Date().toISOString().split('T')[0]}"
+                                    onclick="event.stopPropagation()"
+                                    onchange="loadAndDisplayRedemptions()"
+                                    style="flex: 1; padding: 12px; border: 2px solid #E8D9B6; border-radius: 8px; font-size: 16px;"
+                                >
+                                <button onclick="event.stopPropagation(); changeRedemptionDate(1)" style="flex: 0 0 auto; min-width: 40px; padding: 12px 8px; font-size: 20px; background-color: #D7C4A3; border: 2px solid #E8D9B6; border-radius: 8px; cursor: pointer;">
+                                    →
+                                </button>
+                            </div>
+
+                            <div class="redemption-button-row">
+                                <button class="redemption-load-btn" onclick="event.stopPropagation(); loadAndDisplayRedemptions()">
+                                    🔄 Laden
+                                </button>
+                                <button class="redemption-export-btn" onclick="event.stopPropagation(); exportDailyRedemptions()">
+                                    📄 Export
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="redemptions-display">
+                            <div class="redemption-hint">Wähle ein Datum und klicke "Laden"</div>
+                        </div>
                     </div>
                 </div>
-                <div class="stats-content">
-                    <div class="charts-grid">
-                        <div class="chart-container">
-                            <h4>📊 Status-Verteilung</h4>
-                            <div class="chart-wrapper">
-                                <canvas id="statusPieChart"></canvas>
-                            </div>
+
+                <!-- KLAPPBAR: DIAGRAMME -->
+                <div class="stats-section" id="stats-charts" onclick="toggleStatsSection('stats-charts')">
+                    <div class="stats-header">
+                        <div class="stats-title">
+                            <span class="stats-arrow">▶</span>
+                            <span>Diagramme</span>
                         </div>
-            
-                        <div class="chart-container">
-                            <h4>📊 Versandarten</h4>
-                            <div class="chart-wrapper">
-                                <canvas id="deliveryBarChart"></canvas>
+                    </div>
+                    <div class="stats-content">
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                            <div>
+                                <h4 style="text-align: center; margin-bottom: 10px;">Status-Verteilung</h4>
+                                <canvas id="status-chart"></canvas>
+                            </div>
+                            <div>
+                                <h4 style="text-align: center; margin-bottom: 10px;">Werte-Vergleich</h4>
+                                <canvas id="values-chart"></canvas>
                             </div>
                         </div>
                     </div>
+                </div>
                 </div>
             </div>
-            <!-- CSV-EXPORT -->
-                <div class="export-button">
-                    <button onclick="exportStatsToCSV('${period}')">📥 Statistiken als CSV exportieren</button>
+            
+            <!-- BOX 3: VERWALTUNG (KLAPPBAR) -->
+            <div class="stats-section" id="box-verwaltung" onclick="toggleStatsSection('box-verwaltung')" style="background: #F6EAD2; padding: 25px; border-radius: 8px; margin-bottom: 25px; border: 2px solid #6B7C59;">
+                <div class="stats-header">
+                    <div class="stats-title" style="display: flex; align-items: center; gap: 10px;">
+                        <span class="stats-arrow">▶</span>
+                        <h3 style="margin: 0; color: #6B7C59; font-size: 20px;">⚙️ Verwaltung</h3>
+                    </div>
                 </div>
+                <div class="stats-content" onclick="event.stopPropagation()">
+                <div class="action-buttons">
+                    <button onclick="showChangePassword()" style="background-color: #A67C52;">
+                        🔑 Passwort ändern
+                    </button>
+                    <button onclick="createBackup()" style="background-color: #6B7C59;">
+                        📦 Backup erstellen
+                    </button>
+                    <button onclick="showRestoreBackup()" style="background-color: #A67C52;">
+                        📥 Backup wiederherstellen
+                    </button>
+                </div>
+            </div>
+            </div>
         </div>
-   `;
+    `;
     
-    // Diagramme rendern
-    renderCharts(stats);
+    // Diagramme initialisieren
+    setTimeout(() => {
+        createStatusChart(stats);
+        createValuesChart(stats);
+    }, 100);
 }
 
 // Diagramme rendern
@@ -3752,4 +3781,242 @@ async function generateManualPDF(voucher, template, positions, download = false)
         console.error('Fehler beim PDF erstellen:', error);
         throw error;
     }
+}
+
+// ====================================
+// BACKUP-SYSTEM
+// ====================================
+
+// Backup erstellen und downloaden
+async function createBackup() {
+    if (!isAdmin()) {
+        alert('Nur Admins können Backups erstellen');
+        return;
+    }
+    
+    try {
+        console.log('Erstelle Backup...');
+        
+        // Alle Gutscheine laden
+        const vouchers = await loadAllVouchers();
+        
+        // Alle Transaktionen laden
+        const { data: transactions, error: txError } = await supabase
+            .from('voucher_transactions')
+            .select('*')
+            .order('created_at', { ascending: false });
+        
+        if (txError) {
+            console.error('Fehler beim Laden der Transaktionen:', txError);
+        }
+        
+        // Templates laden
+        const templates = loadTemplates();
+        
+        // Backup-Objekt erstellen
+        const backup = {
+            version: '1.0',
+            created_at: new Date().toISOString(),
+            created_by: 'Admin',
+            data: {
+                vouchers: vouchers || [],
+                transactions: transactions || [],
+                templates: templates || []
+            },
+            stats: {
+                total_vouchers: vouchers ? vouchers.length : 0,
+                total_transactions: transactions ? transactions.length : 0,
+                total_templates: templates ? templates.length : 0
+            }
+        };
+        
+        console.log('Backup erstellt:', backup.stats);
+        
+        // Als JSON-Datei downloaden
+        const jsonString = JSON.stringify(backup, null, 2);
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        
+        const filename = `gutschein-backup-${new Date().toISOString().split('T')[0]}.json`;
+        
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        link.click();
+        
+        alert(`✅ Backup erfolgreich erstellt!\n\nDatei: ${filename}\n\nGutscheine: ${backup.stats.total_vouchers}\nTransaktionen: ${backup.stats.total_transactions}\nTemplates: ${backup.stats.total_templates}`);
+        
+    } catch (error) {
+        console.error('Fehler beim Backup:', error);
+        alert('❌ Fehler beim Erstellen des Backups: ' + error.message);
+    }
+}
+
+// Backup wiederherstellen - Formular anzeigen
+function showRestoreBackup() {
+    if (!isAdmin()) {
+        alert('Nur Admins können Backups wiederherstellen');
+        return;
+    }
+    
+    const app = document.getElementById('app');
+    
+    app.innerHTML = `
+        <div class="restore-backup">
+            <div class="list-header">
+                <h2>📥 Backup wiederherstellen</h2>
+                <button onclick="showAdminDashboard()">← Zurück</button>
+            </div>
+            
+            <div style="max-width: 600px; margin: 40px auto; padding: 30px; background: #F6EAD2; border-radius: 8px;">
+                <p style="margin-bottom: 20px; color: #8B5A3C; font-weight: bold;">
+                    ⚠️ WARNUNG
+                </p>
+                <p style="margin-bottom: 20px;">
+                    Das Wiederherstellen eines Backups überschreibt:
+                </p>
+                <ul style="margin-bottom: 20px; padding-left: 20px;">
+                    <li>Alle Templates (localStorage)</li>
+                </ul>
+                <p style="margin-bottom: 20px;">
+                    <strong>Gutscheine in der Datenbank werden NICHT überschrieben</strong> (aus Sicherheitsgründen).
+                </p>
+                <p style="margin-bottom: 30px; color: #666; font-size: 14px;">
+                    Tipp: Erstelle erst ein aktuelles Backup, bevor du ein altes wiederherstellst!
+                </p>
+                
+                <div class="form-group">
+                    <label for="backup-file">Backup-Datei auswählen</label>
+                    <input 
+                        type="file" 
+                        id="backup-file" 
+                        accept=".json"
+                    >
+                </div>
+                
+                <div style="display: flex; gap: 10px; justify-content: center; margin-top: 30px; flex-wrap: wrap;">
+                    <button onclick="restoreBackup()" style="background-color: #A67C52; padding: 15px 30px;">
+                        📥 Jetzt wiederherstellen
+                    </button>
+                    <button onclick="showAdminDashboard()" style="background-color: #8B5A3C; padding: 15px 30px;">
+                        Abbrechen
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Backup wiederherstellen - Ausführen
+async function restoreBackup() {
+    const fileInput = document.getElementById('backup-file');
+    const file = fileInput.files[0];
+    
+    if (!file) {
+        alert('Bitte wähle eine Backup-Datei aus');
+        return;
+    }
+    
+    // Sicherheitsabfrage
+    if (!confirm('⚠️ ACHTUNG!\n\nDie aktuellen Templates werden überschrieben.\n\nMöchtest du wirklich fortfahren?')) {
+        return;
+    }
+    
+    try {
+        console.log('Lade Backup...');
+        
+        // Datei lesen
+        const fileContent = await file.text();
+        const backup = JSON.parse(fileContent);
+        
+        console.log('Backup geladen:', backup);
+        
+        // Validierung
+        if (!backup.version || !backup.data) {
+            throw new Error('Ungültiges Backup-Format');
+        }
+        
+        // Templates wiederherstellen
+        if (backup.data.templates && backup.data.templates.length > 0) {
+            saveTemplates(backup.data.templates);
+            console.log('Templates wiederhergestellt:', backup.data.templates.length);
+        }
+        
+        // Info: Gutscheine werden NICHT wiederhergestellt (zu gefährlich)
+        alert(`✅ Backup erfolgreich wiederhergestellt!\n\nTemplates: ${backup.data.templates ? backup.data.templates.length : 0}\n\nHINWEIS: Gutscheine wurden aus Sicherheitsgründen nicht wiederhergestellt.`);
+        
+        // Zurück zum Dashboard
+        showAdminDashboard();
+        
+    } catch (error) {
+        console.error('Fehler beim Wiederherstellen:', error);
+        alert('❌ Fehler beim Wiederherstellen des Backups:\n\n' + error.message + '\n\nBitte prüfe ob die Datei ein gültiges Backup ist.');
+    }
+}
+
+// Diagramme erstellen
+function createStatusChart(stats) {
+    const canvas = document.getElementById('status-chart');
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    
+    if (window.statusChartInstance) {
+        window.statusChartInstance.destroy();
+    }
+    
+    window.statusChartInstance = new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: ['Aktiv', 'Eingelöst', 'Abgelaufen'],
+            datasets: [{
+                data: [stats.active, stats.redeemed, stats.expired],
+                backgroundColor: ['#6B7C59', '#A67C52', '#8B5A3C']
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+}
+
+function createValuesChart(stats) {
+    const canvas = document.getElementById('values-chart');
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    
+    if (window.valuesChartInstance) {
+        window.valuesChartInstance.destroy();
+    }
+    
+    window.valuesChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['Aktiv', 'Eingelöst', 'Abgelaufen'],
+            datasets: [{
+                label: 'Wert in €',
+                data: [stats.activeValue, stats.redeemedValue, stats.expiredValue],
+                backgroundColor: ['#6B7C59', '#A67C52', '#8B5A3C']
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
 }

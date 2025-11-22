@@ -812,7 +812,8 @@ button:active {
     border-top: 1px solid #E8D9B6;
 }
 
-.stats-section.expanded .stats-content {
+.stats-section.expanded > div > .stats-content,
+.stats-section.expanded > .stats-content {
     display: block;
 }
 
