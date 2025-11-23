@@ -41,24 +41,43 @@ main {
     min-height: 400px;
 }
 
-/* Buttons */
+/* Buttons - Einheitliches Design */
 button {
     background-color: #A67C52;
     color: white;
     border: none;
-    padding: 12px 24px;
-    border-radius: 8px;
+    padding: 14px 24px;
+    border-radius: 10px;
     font-size: 16px;
+    font-weight: 600;
     cursor: pointer;
-    transition: background-color 0.3s;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    min-height: 48px;
 }
 
 button:hover {
     background-color: #8B5A3C;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
 }
 
 button:active {
-    transform: scale(0.98);
+    transform: translateY(0) scale(0.98);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+/* Sekundär-Buttons (Zurück, Abbrechen) */
+button.secondary,
+.list-header button,
+.scanner-buttons button:last-child {
+    background-color: #6B7C59;
+}
+
+button.secondary:hover,
+.list-header button:hover,
+.scanner-buttons button:last-child:hover {
+    background-color: #5a6b4a;
 }
 
 /* Dashboard */
@@ -665,25 +684,32 @@ button:active {
 }
 
 .form-group {
-    margin-bottom: 20px;
+    margin-bottom: 24px;
 }
 
 .form-group label {
     display: block;
-    margin-bottom: 8px;
-    font-weight: bold;
+    margin-bottom: 10px;
+    font-weight: 700;
     color: #6B7C59;
+    font-size: 15px;
+    letter-spacing: 0.3px;
+}
+
+.form-group label::after {
+    color: #c0392b;
 }
 
 .form-group input,
 .form-group select,
 .form-group textarea {
     width: 100%;
-    padding: 12px;
+    padding: 14px 16px;
     font-size: 16px;
     border: 2px solid #E8D9B6;
-    border-radius: 8px;
+    border-radius: 10px;
     background-color: white;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
 }
 
 .form-group select {
@@ -692,9 +718,9 @@ button:active {
     -moz-appearance: none;
     background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238B5A3C' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
     background-repeat: no-repeat;
-    background-position: right 12px center;
-    background-size: 16px;
-    padding-right: 40px;
+    background-position: right 14px center;
+    background-size: 18px;
+    padding-right: 44px;
 }
 
 .form-group input:focus,
@@ -702,6 +728,14 @@ button:active {
 .form-group textarea:focus {
     outline: none;
     border-color: #A67C52;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.05), 0 0 0 3px rgba(166, 124, 82, 0.15);
+}
+
+.form-group small {
+    display: block;
+    margin-top: 8px;
+    color: #888;
+    font-size: 13px;
 }
 
 .create-btn {

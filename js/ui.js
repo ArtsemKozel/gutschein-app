@@ -890,7 +890,7 @@ async function showAdminDashboard(period = 'all') {
         <div class="dashboard">
             <!-- HEADER: Clean mit nur Logout -->
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; flex-wrap: wrap; gap: 10px;">
-                <h2>📊 Admin-Dashboard <span class="admin-badge">ADMIN</span></h2>
+                <h2>Admin-Dashboard</h2>
                 <button onclick="adminLogout()" style="background-color: #8B5A3C; padding: 10px 20px; font-size: 20px; border-radius: 8px;" title="Ausloggen">
                     ⏻
                 </button>
