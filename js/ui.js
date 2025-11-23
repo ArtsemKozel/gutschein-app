@@ -178,7 +178,7 @@ function showVoucherCreated(voucher, templateId = 'default') {
     app.innerHTML = `
         <div class="created-page">
             <div class="success-header">
-                <h2>✅ Gutschein erstellt!</h2>
+                <h2>✓ Gutschein erstellt!</h2>
             </div>
             
             <div class="voucher-summary">
