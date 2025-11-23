@@ -465,17 +465,6 @@ async function partialRedeem(voucherId) {
 async function showVoucherList(filterStatus = 'all', searchTerm = '') {
     const app = document.getElementById('app');
     
-    // Lade-Anzeige
-    app.innerHTML = `
-        <div class="voucher-list">
-            <div class="list-header">
-                <h2>📋 Alle Gutscheine</h2>
-                <button onclick="goBack()">← Zurück</button>
-            </div>
-            <p>Lädt Gutscheine...</p>
-        </div>
-    `;
-    
     // Gutscheine laden
     const vouchers = await loadAllVouchers();
 
@@ -917,7 +906,6 @@ async function showAdminDashboard(period = 'all') {
                 <div class="action-buttons">
                     <button onclick="showVoucherList()">📋 Alle Gutscheine</button>
                     <button onclick="showTemplateManager()">📑 Templates</button>
-                    <button onclick="showCashRegister()">💰 Kassenabschluss</button>
                 </div>
             </div>
             
@@ -1837,17 +1825,6 @@ async function sortVoucherList(sortBy, searchTerm, filterStatus) {
     console.log('Sortiere nach:', sortBy);
     
     const app = document.getElementById('app');
-    
-    // Lade-Anzeige
-    app.innerHTML = `
-        <div class="voucher-list">
-            <div class="list-header">
-                <h2>📋 Alle Gutscheine</h2>
-                <button onclick="goBack()">← Zurück</button>
-            </div>
-            <p style="text-align: center; padding: 40px;">Lädt...</p>
-        </div>
-    `;
     
     // Gutscheine laden
     const vouchers = await loadAllVouchers();

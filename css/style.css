@@ -190,35 +190,51 @@ button:active {
     background-color: #F6EAD2;
 }
 
-/* Status-Badges */
+/* Status-Badges - Pill-Design */
 .status-active,
 .status-redeemed,
 .status-expired,
 .status-cancelled {
     color: white;
-    padding: 8px 16px;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: bold;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
     text-align: center;
-    min-width: 100px;
     display: inline-block;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.15);
 }
 
 .status-active {
     background-color: #6B7C59;
 }
 
+.status-active::before {
+    content: "● ";
+}
+
 .status-redeemed {
     background-color: #A67C52;
 }
 
+.status-redeemed::before {
+    content: "● ";
+}
+
 .status-expired {
-    background-color: #8B5A3C;
+    background-color: #999;
+}
+
+.status-expired::before {
+    content: "● ";
 }
 
 .status-cancelled {
-    background-color: #8B5A3C;
+    background-color: #c0392b;
+}
+
+.status-cancelled::before {
+    content: "● ";
 }
 
 /* ====================================
@@ -1194,3 +1210,199 @@ button:active {
     }
 }
 
+/* ====================================
+   ANIMATIONEN
+   ==================================== */
+
+/* Basis-Animation für Seiten-Übergänge */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Seiten-Inhalt animieren - nur bei echtem Seitenwechsel */
+.create-page,
+.created-page,
+.redeem-page,
+.login-page {
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* Dashboard ohne Animation (verhindert Blitzen bei Filter-Wechsel) */
+.dashboard {
+    animation: none;
+}
+
+/* Buttons verbessern */
+button {
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+button:active {
+    transform: translateY(0) scale(0.98);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+/* Gutschein-Cards - keine Animation (verhindert Blitzen bei Filter) */
+.voucher-card {
+    opacity: 1;
+}
+
+/* Stat-Cards animiert */
+.stat-card {
+    animation: fadeInUp 0.3s ease-out;
+    animation-fill-mode: both;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.stat-card:nth-child(1) { animation-delay: 0.1s; }
+.stat-card:nth-child(2) { animation-delay: 0.15s; }
+.stat-card:nth-child(3) { animation-delay: 0.2s; }
+.stat-card:nth-child(4) { animation-delay: 0.25s; }
+
+/* Klappbare Bereiche smooth */
+.card-details {
+    overflow: hidden;
+    max-height: 0;
+    padding: 0 20px;
+    opacity: 0;
+    transition: max-height 0.3s ease, padding 0.3s ease, opacity 0.3s ease;
+}
+
+.voucher-card.expanded .card-details {
+    max-height: 500px;
+    padding: 0 20px 20px 20px;
+    opacity: 1;
+}
+
+/* Stats-Content smooth */
+.stats-content {
+    overflow: hidden;
+    max-height: 0;
+    padding: 0 20px;
+    opacity: 0;
+    transition: max-height 0.3s ease, padding 0.3s ease, opacity 0.3s ease;
+    display: block !important;
+}
+
+.stats-section.expanded > .stats-content {
+    max-height: 1000px;
+    padding: 20px;
+    opacity: 1;
+}
+
+/* Input-Felder verbessert */
+input, select, textarea {
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    border: 2px solid #E8D9B6;
+    border-radius: 10px;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.08);
+}
+
+input:focus, select:focus, textarea:focus {
+    border-color: #A67C52;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.08), 0 0 0 3px rgba(166, 124, 82, 0.15);
+    outline: none;
+}
+
+input::placeholder, textarea::placeholder {
+    color: #aaa;
+    font-style: italic;
+}
+
+/* Success-Header Bounce */
+@keyframes successPop {
+    0% { transform: scale(0.8); opacity: 0; }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.success-header {
+    animation: successPop 0.4s ease-out;
+}
+
+/* QR-Code Einblenden */
+.qr-container {
+    animation: fadeIn 0.5s ease-out 0.2s;
+    animation-fill-mode: both;
+}
+
+/* Status-Badges leichtes Pulsieren bei Hover */
+.status-active:hover,
+.status-redeemed:hover,
+.status-expired:hover,
+.status-cancelled:hover {
+    transform: scale(1.05);
+    transition: transform 0.2s ease;
+}
+
+/* Voucher-Card Hover verbessern */
+.voucher-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+}
+
+/* Filter-Buttons Animation */
+.filter-buttons button,
+.filter-buttons-row button {
+    transition: all 0.2s ease;
+}
+
+.filter-buttons button:hover,
+.filter-buttons-row button:hover {
+    transform: translateY(-1px);
+}
+
+/* Modal Fade-In */
+#chart-popup-modal {
+    animation: fadeIn 0.2s ease-out;
+}
+
+/* Loading-State für Buttons */
+button:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+/* Smooth Scroll für die ganze App */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Reduzierte Bewegung für Nutzer die das bevorzugen */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
