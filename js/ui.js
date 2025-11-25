@@ -46,8 +46,11 @@ async function showDashboard() {
 }
 
 // Gutschein erstellen - Formular
-function showCreateVoucher() {
+async function showCreateVoucher() {
     const app = document.getElementById('app');
+    
+    // Templates VORHER laden
+    const templates = await loadTemplates();
     
     app.innerHTML = `
         <div class="create-page">
@@ -100,7 +103,7 @@ function showCreateVoucher() {
                     <label for="voucher-template">PDF-Template</label>
                     <select id="voucher-template">
                         <option value="default">Standard (Code-Design)</option>
-                        ${loadTemplates().map(t => `
+                        ${templates.map(t => `
                             <option value="${t.id}">${t.name}</option>
                         `).join('')}
                     </select>
@@ -2072,7 +2075,7 @@ function changeAdminPassword() {
 // ====================================
 
 // Template-Manager anzeigen
-function showTemplateManager() {
+async function showTemplateManager() {
     if (!isAdmin()) {
         showAdminLogin();
         return;
@@ -2081,7 +2084,7 @@ function showTemplateManager() {
     console.log('Zeige Template-Manager...');
     
     // Templates aus localStorage laden
-    const templates = loadTemplates();
+    const templates = await loadTemplates();
     
     const app = document.getElementById('app');
     
@@ -2126,14 +2129,55 @@ function showTemplateManager() {
 }
 
 // Templates aus localStorage laden
-function loadTemplates() {
-    const stored = localStorage.getItem('voucherTemplates');
-    return stored ? JSON.parse(stored) : [];
+async function loadTemplates() {
+    try {
+        const { data, error } = await supabase
+            .from('templates')
+            .select('*')
+            .order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        
+        // Datenstruktur umwandeln (Supabase → App-Format)
+        return data.map(t => ({
+            id: t.id,
+            name: t.name,
+            pdfData: t.pdf_data,
+            width: t.width,
+            height: t.height,
+            fields: t.fields
+        }));
+    } catch (error) {
+        console.error('Fehler beim Laden:', error);
+        return [];
+    }
 }
 
 // Templates in localStorage speichern
-function saveTemplates(templates) {
-    localStorage.setItem('voucherTemplates', JSON.stringify(templates));
+async function saveTemplates(templates) {
+    try {
+        // In Supabase speichern
+        for (const template of templates) {
+            const { error } = await supabase
+                .from('templates')
+                .upsert({
+                    id: template.id,
+                    name: template.name,
+                    pdf_data: template.pdfData,
+                    width: template.width,
+                    height: template.height,
+                    fields: template.fields,
+                    updated_at: new Date().toISOString()
+                });
+            
+            if (error) throw error;
+        }
+        
+        console.log('Templates in Supabase gespeichert');
+    } catch (error) {
+        console.error('Fehler beim Speichern:', error);
+        alert('Fehler beim Speichern der Templates');
+    }
 }
 
 // Neues Template erstellen - Formular anzeigen
@@ -2579,7 +2623,7 @@ function deselectField() {
 }
 
 // Template mit aktuellen Positionen speichern
-function saveTemplateWithPositions() {
+async function saveTemplateWithPositions() {
     const template = window.currentTemplate;
     
     if (!template) {
@@ -2645,7 +2689,7 @@ function saveTemplateWithPositions() {
     }
     
     // Templates laden
-    const templates = loadTemplates();
+    const templates = await loadTemplates();
     
     // Prüfen ob Template schon existiert (beim Bearbeiten)
     const existingIndex = templates.findIndex(t => t.id === template.id);
@@ -2670,8 +2714,8 @@ function saveTemplateWithPositions() {
 }
 
 // Template bearbeiten
-function editTemplate(templateId) {
-    const templates = loadTemplates();
+async function editTemplate(templateId) {
+    const templates = await loadTemplates();
     const template = templates.find(t => t.id === templateId);
     
     if (!template) {
@@ -2684,12 +2728,12 @@ function editTemplate(templateId) {
 }
 
 // Template löschen
-function deleteTemplate(templateId) {
+async function deleteTemplate(templateId) {
     if (!confirm('Template wirklich löschen?')) {
         return;
     }
     
-    let templates = loadTemplates();
+    let templates = await loadTemplates();
     templates = templates.filter(t => t.id !== templateId);
     
     saveTemplates(templates);
@@ -2725,7 +2769,7 @@ async function generatePDFWithTemplate(voucher, templateId) {
         console.log('Lade Template:', templateId);
         
         // Template laden
-        const templates = loadTemplates();
+        const templates = await loadTemplates();
         const template = templates.find(t => t.id === templateId);
         
         if (!template) {
@@ -3089,7 +3133,7 @@ async function generateSimplePDFBlob(voucher) {
 
 // Template-PDF als Blob (ohne Download)
 async function generatePDFWithTemplateBlob(voucher, templateId) {
-    const templates = loadTemplates();
+    const templates = await loadTemplates();
     const template = templates.find(t => t.id === templateId);
     
     if (!template) {
@@ -3461,11 +3505,11 @@ async function generateTestPDFWithTemplate(voucher, template, qrContainer) {
 // ====================================
 
 // Manuelle Platzierung mit echten Voucher-Daten
-function showManualPlacement(voucher, templateId) {
+async function showManualPlacement(voucher, templateId) {
     console.log('Zeige manuelle Platzierung für:', voucher.code);
     
     // Template laden
-    const templates = loadTemplates();
+    const templates = await loadTemplates();
     const template = templates.find(t => t.id === templateId);
     
     if (!template) {
@@ -3837,7 +3881,7 @@ async function createBackup() {
         }
         
         // Templates laden
-        const templates = loadTemplates();
+        const templates = await loadTemplates();
         
         // Backup-Objekt erstellen
         const backup = {
