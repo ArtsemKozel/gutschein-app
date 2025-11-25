@@ -154,14 +154,8 @@ async function handleCreateVoucher(event) {
     const result = await createVoucher(value, buyerName, buyerEmail, notes, deliveryMethod);
     
     if (result.success) {
-        // Erfolg - zeige Bestätigung
-        // Wenn Template gewählt: Manuelle Platzierung
-        if (templateId !== 'default') {
-            showManualPlacement(result.voucher, templateId);
-        } else {
-            // Standard-Design: Direkt zur Success-Seite
-            showVoucherCreated(result.voucher, templateId);
-        }
+        // Erfolg - zeige Bestätigung mit QR + PDF-Download
+        showVoucherCreated(result.voucher, templateId);
     } else {
         alert('Fehler: ' + result.error);
         submitBtn.disabled = false;
@@ -2613,21 +2607,27 @@ function saveTemplateWithPositions() {
     const expiryEl = document.getElementById('field-expiry');
     const qrEl = document.getElementById('field-qr');
     
-    // Positionen speichern (in PDF-Pixeln)
+    // Positionen speichern (in PDF-Pixeln) MIT WIDTH/HEIGHT
     template.fields = {
         code: {
             x: Math.round(parseInt(codeEl.style.left) * scaleX),
             y: Math.round(parseInt(codeEl.style.top) * scaleY),
+            width: Math.round(codeEl.offsetWidth * scaleX),
+            height: Math.round(codeEl.offsetHeight * scaleY),
             fontSize: Math.round(parseInt(codeEl.style.fontSize) * scaleX)
         },
         value: {
             x: Math.round(parseInt(valueEl.style.left) * scaleX),
             y: Math.round(parseInt(valueEl.style.top) * scaleY),
+            width: Math.round(valueEl.offsetWidth * scaleX),
+            height: Math.round(valueEl.offsetHeight * scaleY),
             fontSize: Math.round(parseInt(valueEl.style.fontSize) * scaleX)
         },
         expiryDate: {
             x: Math.round(parseInt(expiryEl.style.left) * scaleX),
             y: Math.round(parseInt(expiryEl.style.top) * scaleY),
+            width: Math.round(expiryEl.offsetWidth * scaleX),
+            height: Math.round(expiryEl.offsetHeight * scaleY),
             fontSize: Math.round(parseInt(expiryEl.style.fontSize) * scaleX)
         },
         qrCode: {
@@ -2707,6 +2707,8 @@ function deleteTemplate(templateId) {
 // Haupt-Funktion: PDF generieren (Template oder Standard)
 async function generateVoucherPDF(voucher, templateId = 'default') {
     console.log('Generiere PDF mit Template:', templateId);
+    console.log('DEBUG - Voucher:', voucher);
+    console.log('DEBUG - TemplateId:', templateId);
     
     if (templateId === 'default') {
         // Standard-Design verwenden
@@ -2751,30 +2753,42 @@ async function generatePDFWithTemplate(voucher, templateId) {
         
         console.log('Template geladen, Größe:', width, 'x', height);
         
-        // GUTSCHEIN-CODE einfügen
-        page.drawText(voucher.code, {
-            x: template.fields.code.x,
-            y: height - template.fields.code.y, // Y-Koordinate umrechnen (PDF = unten 0)
+        // GUTSCHEIN-CODE einfügen (ZENTRIERT horizontal + vertikal)
+        const codeText = voucher.code;
+        const codeWidth = fontBold.widthOfTextAtSize(codeText, template.fields.code.fontSize);
+        const codeCenterX = template.fields.code.x + (template.fields.code.width / 2);
+        const codeCenterY = template.fields.code.y + (template.fields.code.height / 2);
+        console.log('DEBUG Template fields:', template.fields);
+        console.log('DEBUG Code field:', template.fields.code);
+        page.drawText(codeText, {
+            x: codeCenterX - (codeWidth / 2),
+            y: height - codeCenterY - (template.fields.code.fontSize / 3),
             size: template.fields.code.fontSize,
             font: fontBold,
             color: rgb(0, 0, 0),
         });
         
-        // WERT einfügen
+        // WERT einfügen (ZENTRIERT horizontal + vertikal)
         const valueText = `${parseFloat(voucher.original_value).toFixed(2)} €`;
+        const valueWidth = fontBold.widthOfTextAtSize(valueText, template.fields.value.fontSize);
+        const valueCenterX = template.fields.value.x + (template.fields.value.width / 2);
+        const valueCenterY = template.fields.value.y + (template.fields.value.height / 2);
         page.drawText(valueText, {
-            x: template.fields.value.x,
-            y: height - template.fields.value.y,
+            x: valueCenterX - (valueWidth / 2),
+            y: height - valueCenterY - (template.fields.value.fontSize / 3),
             size: template.fields.value.fontSize,
             font: fontBold,
             color: rgb(0, 0, 0),
         });
         
-        // GÜLTIGKEITSDATUM einfügen
+        // GÜLTIGKEITSDATUM einfügen (ZENTRIERT horizontal + vertikal)
         const expiryDate = new Date(voucher.expires_at).toLocaleDateString('de-DE');
+        const dateWidth = font.widthOfTextAtSize(expiryDate, template.fields.expiryDate.fontSize);
+        const dateCenterX = template.fields.expiryDate.x + (template.fields.expiryDate.width / 2);
+        const dateCenterY = template.fields.expiryDate.y + (template.fields.expiryDate.height / 2);
         page.drawText(expiryDate, {
-            x: template.fields.expiryDate.x,
-            y: height - template.fields.expiryDate.y,
+            x: dateCenterX - (dateWidth / 2),
+            y: height - dateCenterY - (template.fields.expiryDate.fontSize / 3),
             size: template.fields.expiryDate.fontSize,
             font: font,
             color: rgb(0, 0, 0),
@@ -3099,34 +3113,40 @@ async function generatePDFWithTemplateBlob(voucher, templateId) {
     
     const { width, height } = page.getSize();
     
-    // Code einfügen (ZENTRIERT)
+    // Code einfügen (ZENTRIERT horizontal + vertikal)
     const codeText = voucher.code;
-    const codeWidth = font.widthOfTextAtSize(codeText, template.fields.code.fontSize);
+    const codeWidth = fontBold.widthOfTextAtSize(codeText, template.fields.code.fontSize);
+    const codeCenterX = template.fields.code.x + (template.fields.code.width / 2);
+    const codeCenterY = template.fields.code.y + (template.fields.code.height / 2);
     page.drawText(codeText, {
-        x: template.fields.code.x - (codeWidth / 2),
-        y: height - template.fields.code.y,
+        x: codeCenterX - (codeWidth / 2),
+        y: height - codeCenterY - (template.fields.code.fontSize / 3),
         size: template.fields.code.fontSize,
         font: fontBold,
         color: rgb(0, 0, 0),
     });
 
-    // Wert einfügen (ZENTRIERT)
+    // Wert einfügen (ZENTRIERT horizontal + vertikal)
     const valueText = `${parseFloat(voucher.original_value).toFixed(2)} €`;
     const valueWidth = fontBold.widthOfTextAtSize(valueText, template.fields.value.fontSize);
+    const valueCenterX = template.fields.value.x + (template.fields.value.width / 2);
+    const valueCenterY = template.fields.value.y + (template.fields.value.height / 2);
     page.drawText(valueText, {
-        x: template.fields.value.x - (valueWidth / 2),
-        y: height - template.fields.value.y,
+        x: valueCenterX - (valueWidth / 2),
+        y: height - valueCenterY - (template.fields.value.fontSize / 3),
         size: template.fields.value.fontSize,
         font: fontBold,
         color: rgb(0, 0, 0),
     });
 
-    // Datum einfügen (ZENTRIERT)
+    // Datum einfügen (ZENTRIERT horizontal + vertikal)
     const expiryDate = new Date(voucher.expires_at).toLocaleDateString('de-DE');
     const dateWidth = font.widthOfTextAtSize(expiryDate, template.fields.expiryDate.fontSize);
+    const dateCenterX = template.fields.expiryDate.x + (template.fields.expiryDate.width / 2);
+    const dateCenterY = template.fields.expiryDate.y + (template.fields.expiryDate.height / 2);
     page.drawText(expiryDate, {
-        x: template.fields.expiryDate.x - (dateWidth / 2),
-        y: height - template.fields.expiryDate.y,
+        x: dateCenterX - (dateWidth / 2),
+        y: height - dateCenterY - (template.fields.expiryDate.fontSize / 3),
         size: template.fields.expiryDate.fontSize,
         font: font,
         color: rgb(0, 0, 0),
@@ -3183,29 +3203,48 @@ async function testTemplatePreview() {
     
     const scaleX = actualWidth / displayWidth;
     const scaleY = actualHeight / displayHeight;
+
+    console.log('DEBUG Skalierung:', { displayWidth, displayHeight, actualWidth, actualHeight, scaleX, scaleY });
     
     const codeEl = document.getElementById('field-code');
     const valueEl = document.getElementById('field-value');
     const expiryEl = document.getElementById('field-expiry');
     const qrEl = document.getElementById('field-qr');
+
+    console.log('DEBUG codeEl:', { 
+        offsetWidth: codeEl.offsetWidth, 
+        offsetHeight: codeEl.offsetHeight,
+        left: codeEl.style.left,
+        top: codeEl.style.top
+    });
     
-    // Temporäres Template mit aktuellen Positionen
+    // Padding der Felder (aus CSS)
+    const paddingX = 10; // padding left
+    const paddingY = 5;  // padding top
+    
+    // Temporäres Template mit aktuellen Positionen + Padding-Korrektur
     const testTemplate = {
         ...template,
         fields: {
             code: {
                 x: Math.round(parseInt(codeEl.style.left) * scaleX),
                 y: Math.round(parseInt(codeEl.style.top) * scaleY),
+                width: Math.round(codeEl.offsetWidth * scaleX),
+                height: Math.round(codeEl.offsetHeight * scaleY),
                 fontSize: Math.round(parseInt(codeEl.style.fontSize) * scaleX)
             },
             value: {
                 x: Math.round(parseInt(valueEl.style.left) * scaleX),
                 y: Math.round(parseInt(valueEl.style.top) * scaleY),
+                width: Math.round(valueEl.offsetWidth * scaleX),
+                height: Math.round(valueEl.offsetHeight * scaleY),
                 fontSize: Math.round(parseInt(valueEl.style.fontSize) * scaleX)
             },
             expiryDate: {
                 x: Math.round(parseInt(expiryEl.style.left) * scaleX),
                 y: Math.round(parseInt(expiryEl.style.top) * scaleY),
+                width: Math.round(expiryEl.offsetWidth * scaleX),
+                height: Math.round(expiryEl.offsetHeight * scaleY),
                 fontSize: Math.round(parseInt(expiryEl.style.fontSize) * scaleX)
             },
             qrCode: {
@@ -3215,6 +3254,10 @@ async function testTemplatePreview() {
             }
         }
     };
+    
+    console.log('DEBUG testTemplate:', testTemplate.fields);
+    console.log('DEBUG Code-Feld:', testTemplate.fields.code);
+    console.log('DEBUG Value-Feld:', testTemplate.fields.value);
     
     // Test-Gutschein erstellen
     const testVoucher = {
@@ -3340,35 +3383,43 @@ async function generateTestPDFWithTemplate(voucher, template, qrContainer) {
         const { width, height } = page.getSize();
         
         console.log('Test-PDF:', template.fields);
+        console.log('DEBUG Code-Feld:', template.fields.code);
+        console.log('DEBUG Value-Feld:', template.fields.value);
         
-        // Code einfügen (ZENTRIERT)
+        // Code einfügen (ZENTRIERT horizontal + vertikal)
         const codeText = voucher.code;
-        const codeWidth = font.widthOfTextAtSize(codeText, template.fields.code.fontSize);
+        const codeWidth = fontBold.widthOfTextAtSize(codeText, template.fields.code.fontSize);
+        const codeCenterX = template.fields.code.x + (template.fields.code.width / 2);
+        const codeCenterY = template.fields.code.y + (template.fields.code.height / 2);
         page.drawText(codeText, {
-            x: template.fields.code.x - (codeWidth / 2),
-            y: height - template.fields.code.y,
+            x: codeCenterX - (codeWidth / 2),
+            y: height - codeCenterY - (template.fields.code.fontSize / 3),
             size: template.fields.code.fontSize,
             font: fontBold,
             color: rgb(0, 0, 0),
         });
 
-        // Wert einfügen (ZENTRIERT)
+        // Wert einfügen (ZENTRIERT horizontal + vertikal)
         const valueText = `${parseFloat(voucher.original_value).toFixed(2)} €`;
         const valueWidth = fontBold.widthOfTextAtSize(valueText, template.fields.value.fontSize);
+        const valueCenterX = template.fields.value.x + (template.fields.value.width / 2);
+        const valueCenterY = template.fields.value.y + (template.fields.value.height / 2);
         page.drawText(valueText, {
-            x: template.fields.value.x - (valueWidth / 2),
-            y: height - template.fields.value.y,
+            x: valueCenterX - (valueWidth / 2),
+            y: height - valueCenterY - (template.fields.value.fontSize / 3),
             size: template.fields.value.fontSize,
             font: fontBold,
             color: rgb(0, 0, 0),
         });
 
-        // Datum einfügen (ZENTRIERT)
+        // Datum einfügen (ZENTRIERT horizontal + vertikal)
         const expiryDate = new Date(voucher.expires_at).toLocaleDateString('de-DE');
         const dateWidth = font.widthOfTextAtSize(expiryDate, template.fields.expiryDate.fontSize);
+        const dateCenterX = template.fields.expiryDate.x + (template.fields.expiryDate.width / 2);
+        const dateCenterY = template.fields.expiryDate.y + (template.fields.expiryDate.height / 2);
         page.drawText(expiryDate, {
-            x: template.fields.expiryDate.x - (dateWidth / 2),
-            y: height - template.fields.expiryDate.y,
+            x: dateCenterX - (dateWidth / 2),
+            y: height - dateCenterY - (template.fields.expiryDate.fontSize / 3),
             size: template.fields.expiryDate.fontSize,
             font: font,
             color: rgb(0, 0, 0),
