@@ -62,9 +62,6 @@ async function showDashboard() {
 // Gutschein erstellen - Formular
 async function showCreateVoucher() {
     const app = document.getElementById('app');
-    
-    // Templates VORHER laden
-    const templates = await loadTemplates();
 
     // Prüfen ob bereits Gutscheine existieren
     const { count } = await supabase
@@ -152,13 +149,11 @@ async function showCreateVoucher() {
                     </div>
                 </div>
                 
-                <div class="form-group">
+                <div class="form-group" id="template-group" style="display: none;">
                     <label for="voucher-template">PDF-Template</label>
                     <select id="voucher-template">
                         <option value="default">Standard (Code-Design)</option>
-                        ${templates.map(t => `
-                            <option value="${t.id}">${t.name}</option>
-                        `).join('')}
+                        <!-- Templates werden nachgeladen wenn Digital gewählt wird -->
                     </select>
                     <small style="color: #666; display: block; margin-top: 5px;">
                         Wähle ein Template oder nutze das Standard-Design
@@ -634,7 +629,7 @@ async function showVoucherList(filterStatus = 'all', searchTerm = '') {
         <!-- SUCH- UND FILTER-BOX -->
         <div class="list-search-box">
             <input 
-                type="text" 
+                type="text"
                 id="list-search-input" 
                 placeholder="🔍 Suche nach Code oder Käufer-Name..."
                 value="${searchTerm}"
@@ -4348,7 +4343,7 @@ function createPopupValuesChart(stats) {
 function toggleVoucherTypeFields() {
     const type = document.getElementById('voucher-type').value;
     const paperDelivery = document.getElementById('paper-delivery-group');
-    const templateGroup = document.getElementById('voucher-template')?.parentElement;
+    const templateGroup = document.getElementById('template-group');
     
     if (type === 'paper') {
         // Papier: Versandart zeigen, Template verstecken
@@ -4357,12 +4352,38 @@ function toggleVoucherTypeFields() {
     } else if (type === 'digital') {
         // Digital: Versandart verstecken, Template zeigen
         paperDelivery.style.display = 'none';
-        if (templateGroup) templateGroup.style.display = 'block';
+        if (templateGroup) {
+            templateGroup.style.display = 'block';
+            // Templates lazy laden
+            loadTemplatesIntoDropdown();
+        }
     } else {
         // Nichts gewählt: alles verstecken
         paperDelivery.style.display = 'none';
         if (templateGroup) templateGroup.style.display = 'none';
     }
+}
+
+// Templates lazy in Dropdown laden (nur beim ersten Mal)
+async function loadTemplatesIntoDropdown() {
+    const select = document.getElementById('voucher-template');
+    
+    // Prüfen ob schon geladen
+    if (!select || select.dataset.loaded === 'true') return;
+    
+    // Templates aus Supabase laden
+    const templates = await loadTemplates();
+    
+    // In Dropdown einfügen
+    templates.forEach(t => {
+        const option = document.createElement('option');
+        option.value = t.id;
+        option.textContent = t.name;
+        select.appendChild(option);
+    });
+    
+    // Markieren als geladen
+    select.dataset.loaded = 'true';
 }
 
 // Käufer-Felder ein-/ausklappen
