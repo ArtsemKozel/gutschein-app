@@ -541,3 +541,20 @@ async function loadRedemptionsByDate(date) {
         date: date
     };
 }
+
+// Gutschein per ID suchen
+async function findVoucherById(id) {
+    console.log('Suche Gutschein:', id);
+    const { data, error } = await supabase
+        .from('vouchers')
+        .select('*')
+        .eq('id', id)
+        .single();
+    
+    if (error) {
+        console.error('Gutschein nicht gefunden:', error.message);
+        return null;
+    }
+    
+    return data;
+}

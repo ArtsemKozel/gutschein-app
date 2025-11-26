@@ -694,9 +694,7 @@ async function toggleVoucherCard(cardElement, voucherId) {
     arrow.textContent = '▼';
     
     // Gutschein-Daten laden
-    const voucher = await findVoucherByCode(
-        cardElement.querySelector('.card-code').textContent
-    );
+    const voucher = await findVoucherById(voucherId);
     
     if (!voucher) {
         detailsDiv.innerHTML = '<p>Fehler beim Laden.</p>';
@@ -1972,7 +1970,7 @@ async function sortVoucherList(sortBy, searchTerm, filterStatus) {
             }
             
             cardsHTML += `
-                <div class="voucher-card" id="voucher-${voucher.id}" onclick="toggleVoucherCard('${voucher.id}')">
+                <div class="voucher-card" id="voucher-${voucher.id}" onclick="toggleVoucherCard(this, '${voucher.id}')">
                     <div class="voucher-card-header">
                         <div class="voucher-code">${voucher.code} ${getVoucherTypeBadge(voucher)}</div>
                         <span class="${statusClass}">${statusText}</span>
