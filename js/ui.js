@@ -51,6 +51,13 @@ async function showCreateVoucher() {
     
     // Templates VORHER laden
     const templates = await loadTemplates();
+
+    // Prüfen ob bereits Gutscheine existieren
+    const { count } = await supabase
+        .from('vouchers')
+        .select('*', { count: 'exact', head: true });
+    
+    const isFirstVoucher = count === 0;
     
     app.innerHTML = `
         <div class="create-page">
@@ -58,8 +65,22 @@ async function showCreateVoucher() {
                 <h2>+ Neuer Gutschein</h2>
                 <button onclick="showDashboard()">← Zurück</button>
             </div>
-            
+
             <form id="create-form" onsubmit="handleCreateVoucher(event)">
+                ${isFirstVoucher ? `
+                    <div class="form-group">
+                        <label for="voucher-code">Gutschein-Code *</label>
+                        <input 
+                            type="text" 
+                            id="voucher-code" 
+                            required
+                            placeholder="z.B. MHBV-0001 oder WEIHNACHT-001"
+                        >
+                        <small style="color: #666; display: block; margin-top: 5px;">
+                            Dieser Code wird als Vorlage für alle zukünftigen Gutscheine verwendet
+                        </small>
+                    </div>
+                ` : ''}
                 <div class="form-group">
                     <label for="voucher-value">Wert (€) *</label>
                     <input 
@@ -71,34 +92,52 @@ async function showCreateVoucher() {
                         placeholder="z.B. 50"
                     >
                 </div>
-                
+
                 <div class="form-group">
-                    <label for="buyer-name">Käufer-Name (optional)</label>
-                    <input 
-                        type="text" 
-                        id="buyer-name" 
-                        placeholder="z.B. Max Mustermann"
-                    >
-                </div>
-                
-                <div class="form-group">
-                    <label for="buyer-email">Käufer-E-Mail (optional)</label>
-                    <input 
-                        type="email" 
-                        id="buyer-email" 
-                        placeholder="z.B. max@example.com"
-                    >
-                </div>
-                
-                <div class="form-group">
-                    <label for="delivery-method">Versandart</label>
-                    <select id="delivery-method">
-                        <option value="in_person">Vor Ort</option>
-                        <option value="mail">Per Post</option>
-                        <option value="email">Per E-Mail</option>
+                    <label for="voucher-type">Gutschein-Art *</label>
+                    <select id="voucher-type" required onchange="toggleVoucherTypeFields()">
+                        <option value="">Bitte wählen</option>
+                        <option value="paper">Papier</option>
+                        <option value="digital">Digital</option>
                     </select>
                 </div>
 
+                <!-- Versandart (nur bei Papier) -->
+                <div class="form-group" id="paper-delivery-group" style="display: none;">
+                    <label for="paper-delivery">Verkaufsart *</label>
+                    <select id="paper-delivery">
+                        <option value="vor_ort">Vor Ort verkauft</option>
+                        <option value="post">Per Post verschickt</option>
+                    </select>
+                </div>
+                
+                <!-- Käufer-Daten (klappbar) -->
+                <div class="form-group">
+                    <button type="button" onclick="toggleBuyerFields()" style="background: #8B5A3C; width: 100%;">
+                        📝 Käufer-Daten hinzufügen (optional)
+                    </button>
+                </div>
+
+                <div id="buyer-fields" style="display: none;">
+                    <div class="form-group">
+                        <label for="buyer-name">Käufer-Name</label>
+                        <input 
+                            type="text" 
+                            id="buyer-name" 
+                            placeholder="z.B. Max Mustermann"
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="buyer-email">Käufer-E-Mail</label>
+                        <input 
+                            type="email" 
+                            id="buyer-email" 
+                            placeholder="z.B. max@example.com"
+                        >
+                    </div>
+                </div>
+                
                 <div class="form-group">
                     <label for="voucher-template">PDF-Template</label>
                     <select id="voucher-template">
@@ -138,9 +177,12 @@ async function handleCreateVoucher(event) {
     const value = parseFloat(document.getElementById('voucher-value').value);
     const buyerName = document.getElementById('buyer-name').value.trim();
     const buyerEmail = document.getElementById('buyer-email').value.trim();
-    const deliveryMethod = document.getElementById('delivery-method').value;
+    const voucherType = document.getElementById('voucher-type').value;
+    const paperDelivery = voucherType === 'paper' ? document.getElementById('paper-delivery').value : null;
     const notes = document.getElementById('voucher-notes').value.trim();
     const templateId = document.getElementById('voucher-template').value;
+    // Custom Code (falls erster Gutschein)
+    const manualCode = document.getElementById('voucher-code')?.value.trim() || null;
     
     // Validierung
     if (!value || value <= 0) {
@@ -154,11 +196,15 @@ async function handleCreateVoucher(event) {
     submitBtn.textContent = 'Wird erstellt...';
     
     // Gutschein erstellen
-    const result = await createVoucher(value, buyerName, buyerEmail, notes, deliveryMethod);
+    const result = await createVoucher(value, buyerName, buyerEmail, notes, voucherType, paperDelivery, manualCode);
     
     if (result.success) {
-        // Erfolg - zeige Bestätigung mit QR + PDF-Download
-        showVoucherCreated(result.voucher, templateId);
+        // Erfolg - unterschiedliche Anzeige je nach Typ
+        if (voucherType === 'paper') {
+            showPaperVoucherCreated(result.voucher);
+        } else {
+            showVoucherCreated(result.voucher, templateId);
+        }
     } else {
         alert('Fehler: ' + result.error);
         submitBtn.disabled = false;
@@ -219,6 +265,37 @@ function showVoucherCreated(voucher, templateId = 'default') {
     setTimeout(() => {
         generateQRCode(voucher.code);
     }, 200);
+}
+
+// Success-Seite für Papier-Gutscheine (nur Code anzeigen)
+function showPaperVoucherCreated(voucher) {
+    const app = document.getElementById('app');
+    
+    app.innerHTML = `
+        <div class="success-page">
+            <div class="success-icon">✅</div>
+            <h2>Papier-Gutschein erstellt!</h2>
+            
+            <div style="background: #F6EAD2; padding: 40px; border-radius: 12px; margin: 30px 0; text-align: center;">
+                <p style="color: #666; margin-bottom: 10px;">Gutschein-Code:</p>
+                <h1 style="font-size: 48px; color: #8B5A3C; margin: 0; font-weight: bold; letter-spacing: 2px;">
+                    ${voucher.code}
+                </h1>
+                <p style="color: #666; margin-top: 20px; font-size: 18px;">
+                    Wert: ${parseFloat(voucher.original_value).toFixed(2)} €
+                </p>
+            </div>
+            
+            <p style="color: #666; text-align: center; margin: 20px 0;">
+                Trage diesen Code auf deinem vorgedruckten Gutschein ein.
+            </p>
+            
+            <div class="action-buttons">
+                <button onclick="showCreateVoucher()">+ Weiteren Gutschein</button>
+                <button onclick="showDashboard()">← Zum Dashboard</button>
+            </div>
+        </div>
+    `;
 }
 
 // QR-Code generieren
@@ -4250,4 +4327,36 @@ function createPopupValuesChart(stats) {
             }
         }
     });
+}
+
+// Felder je nach Gutschein-Art ein-/ausblenden
+function toggleVoucherTypeFields() {
+    const type = document.getElementById('voucher-type').value;
+    const paperDelivery = document.getElementById('paper-delivery-group');
+    const templateGroup = document.getElementById('voucher-template')?.parentElement;
+    
+    if (type === 'paper') {
+        // Papier: Versandart zeigen, Template verstecken
+        paperDelivery.style.display = 'block';
+        if (templateGroup) templateGroup.style.display = 'none';
+    } else if (type === 'digital') {
+        // Digital: Versandart verstecken, Template zeigen
+        paperDelivery.style.display = 'none';
+        if (templateGroup) templateGroup.style.display = 'block';
+    } else {
+        // Nichts gewählt: alles verstecken
+        paperDelivery.style.display = 'none';
+        if (templateGroup) templateGroup.style.display = 'none';
+    }
+}
+
+// Käufer-Felder ein-/ausklappen
+function toggleBuyerFields() {
+    const fields = document.getElementById('buyer-fields');
+    
+    if (fields.style.display === 'none') {
+        fields.style.display = 'block';
+    } else {
+        fields.style.display = 'none';
+    }
 }

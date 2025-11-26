@@ -253,23 +253,62 @@ async function getNextVoucherNumber() {
     return nextNumber;
 }
 
-// Gutschein-Code generieren (GIFT-0001 Format)
-function generateVoucherCode(number) {
-    return 'GIFT-' + String(number).padStart(4, '0');
+// Code-Präfix speichern (aus erstem Gutschein)
+async function saveCodePrefix(manualCode) {
+    // Beispiel: "MHBV-0001" → Präfix: "MHBV", Länge: 4
+    const parts = manualCode.split('-');
+    
+    if (parts.length !== 2) {
+        console.error('Code muss Format "PRÄFIX-NUMMER" haben');
+        return;
+    }
+    
+    const prefix = parts[0];
+    const number = parts[1];
+    const numberLength = number.length;
+    
+    // In localStorage speichern (einfacher als Supabase-Tabelle)
+    localStorage.setItem('voucherCodePrefix', prefix);
+    localStorage.setItem('voucherCodeNumberLength', numberLength);
+    
+    console.log('Präfix gespeichert:', prefix, 'Länge:', numberLength);
+}
+
+// Code mit gespeichertem Präfix generieren
+async function generateVoucherCode(number) {
+    const prefix = localStorage.getItem('voucherCodePrefix') || 'GIFT';
+    const length = parseInt(localStorage.getItem('voucherCodeNumberLength')) || 4;
+    
+    return prefix + '-' + String(number).padStart(length, '0');
 }
 
 // Neuen Gutschein erstellen
-async function createVoucher(value, buyerName, buyerEmail, notes, deliveryMethod) {
+async function createVoucher(value, buyerName, buyerEmail, notes, voucherType, paperDelivery, manualCode = null) {
     console.log('Erstelle neuen Gutschein...');
     
-    // Nächste Nummer holen
-    const nextNumber = await getNextVoucherNumber();
-    if (!nextNumber) {
-        return { success: false, error: 'Konnte keine Nummer generieren' };
-    }
+    // Code-Generierung
+    let code;
     
-    // Code generieren
-    const code = generateVoucherCode(nextNumber);
+    if (manualCode) {
+        // Erster Gutschein: Custom Code verwenden
+        code = manualCode;
+        await saveCodePrefix(manualCode);
+    
+        // Counter auf 1 setzen (wichtig!)
+        await supabase
+            .from('voucher_counter')
+            .update({ current_number: 1 })
+            .eq('id', 1);
+    } else {
+        // Nächste Nummer holen
+        const nextNumber = await getNextVoucherNumber();
+        if (!nextNumber) {
+            return { success: false, error: 'Konnte keine Nummer generieren' };
+        }
+        
+        // Code mit gespeichertem Präfix generieren
+        code = await generateVoucherCode(nextNumber);
+    }
     
     // Ablaufdatum: 2 Jahre ab heute
     const expiryDate = new Date();
@@ -287,7 +326,8 @@ async function createVoucher(value, buyerName, buyerEmail, notes, deliveryMethod
             buyer_name: buyerName || null,
             buyer_email: buyerEmail || null,
             notes: notes || null,
-            delivery_method: deliveryMethod || null
+            voucher_type: voucherType,
+            paper_delivery: paperDelivery
         })
         .select()
         .single();
