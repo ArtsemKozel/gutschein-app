@@ -24,6 +24,20 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 });
 
+// Badge für Gutschein-Art generieren
+function getVoucherTypeBadge(voucher) {
+    if (voucher.voucher_type === 'paper') {
+        if (voucher.paper_delivery === 'vor_ort') {
+            return '<span style="margin-left: 8px; font-size: 16px;" title="Vor Ort verkauft">🏠</span>';
+        } else if (voucher.paper_delivery === 'post') {
+            return '<span style="margin-left: 8px; font-size: 16px;" title="Per Post">✉️</span>';
+        }
+    } else if (voucher.voucher_type === 'digital') {
+        return '<span style="margin-left: 8px; font-size: 16px;" title="Digital">@</span>';
+    }
+    return '';
+}
+
 // Dashboard anzeigen
 async function showDashboard() {
     console.log('Zeige Dashboard...');
@@ -594,7 +608,7 @@ async function showVoucherList(filterStatus = 'all', searchTerm = '') {
                     <div class="card-header">
                         <div class="card-left">
                             <span class="card-arrow">▶</span>
-                            <span class="card-code">${voucher.code}</span>
+                            <span class="card-code">${voucher.code} ${getVoucherTypeBadge(voucher)}</span>
                         </div>
                         <span class="${statusClass}">${statusText}</span>
                     </div>
@@ -1965,7 +1979,7 @@ async function sortVoucherList(sortBy, searchTerm, filterStatus) {
             cardsHTML += `
                 <div class="voucher-card" id="voucher-${voucher.id}" onclick="toggleVoucherCard('${voucher.id}')">
                     <div class="voucher-card-header">
-                        <div class="voucher-code">${voucher.code}</div>
+                        <div class="voucher-code">${voucher.code} ${getVoucherTypeBadge(voucher)}</div>
                         <span class="${statusClass}">${statusText}</span>
                     </div>
                     <div class="voucher-card-info">
