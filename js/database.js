@@ -92,15 +92,21 @@ async function loadStats() {
     
     // NEU: Versandarten zählen
     const deliveryMethods = {
-        in_person: 0,
-        mail: 0,
-        email: 0
+        paper_vor_ort: 0,
+        paper_post: 0,
+        digital: 0
     };
-    
+
     data.forEach(voucher => {
-        if (voucher.delivery_method === 'in_person') deliveryMethods.in_person++;
-        else if (voucher.delivery_method === 'mail') deliveryMethods.mail++;
-        else if (voucher.delivery_method === 'email') deliveryMethods.email++;
+        if (voucher.voucher_type === 'paper') {
+            if (voucher.paper_delivery === 'vor_ort') {
+                deliveryMethods.paper_vor_ort++;
+            } else if (voucher.paper_delivery === 'post') {
+                deliveryMethods.paper_post++;
+            }
+        } else if (voucher.voucher_type === 'digital') {
+            deliveryMethods.digital++;
+        }
     });
     
     // Erweiterte Stats hinzufügen
@@ -417,15 +423,21 @@ async function loadStatsFiltered(period = 'all') {
     
     // Versandarten zählen
     const deliveryMethods = {
-        in_person: 0,
-        mail: 0,
-        email: 0
+        paper_vor_ort: 0,
+        paper_post: 0,
+        digital: 0
     };
     
     filteredData.forEach(voucher => {
-        if (voucher.delivery_method === 'in_person') deliveryMethods.in_person++;
-        else if (voucher.delivery_method === 'mail') deliveryMethods.mail++;
-        else if (voucher.delivery_method === 'email') deliveryMethods.email++;
+        if (voucher.voucher_type === 'paper') {
+            if (voucher.paper_delivery === 'vor_ort') {
+                deliveryMethods.paper_vor_ort++;
+            } else if (voucher.paper_delivery === 'post') {
+                deliveryMethods.paper_post++;
+            }
+        } else if (voucher.voucher_type === 'digital') {
+            deliveryMethods.digital++;
+        }
     });
     
     // Erweiterte Stats hinzufügen

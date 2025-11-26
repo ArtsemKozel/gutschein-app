@@ -813,9 +813,9 @@ function exportStatsToCSV(period = 'all') {
         
         // Versandarten
         csv += 'Versandart,Anzahl,-\n';
-        csv += `Vor Ort,${stats.deliveryMethods.in_person},-\n`;
-        csv += `Per Post,${stats.deliveryMethods.mail},-\n`;
-        csv += `Per E-Mail,${stats.deliveryMethods.email},-\n`;
+        csv += `Vor Ort (Papier),${stats.deliveryMethods.paper_vor_ort},-\n`;
+        csv += `Per Post (Papier),${stats.deliveryMethods.paper_post},-\n`;
+        csv += `Digital,${stats.deliveryMethods.digital},-\n`;
         
         // Zeitraum-Text für Dateinamen
         let periodText = 'gesamt';
@@ -1074,24 +1074,24 @@ async function showAdminDashboard(period = 'all') {
                     <div class="stats-header">
                         <div class="stats-title">
                             <span class="stats-arrow">▶</span>
-                            <span>Versandarten</span>
+                            <span>Verkaufsarten</span>
                         </div>
                     </div>
                     <div class="stats-content">
                         <div class="stats-grid">
                             <div class="stat-card">
-                                <div class="stat-label">Vor Ort</div>
-                                <div class="stat-value">${stats.deliveryMethods.in_person}</div>
+                                <div class="stat-label">Vor Ort (Papier)</div>
+                                <div class="stat-value">${stats.deliveryMethods.paper_vor_ort}</div>
                             </div>
                             
                             <div class="stat-card">
-                                <div class="stat-label">Per Post</div>
-                                <div class="stat-value">${stats.deliveryMethods.mail}</div>
+                                <div class="stat-label">Per Post (Papier)</div>
+                                <div class="stat-value">${stats.deliveryMethods.paper_post}</div>
                             </div>
                             
                             <div class="stat-card">
-                                <div class="stat-label">Per E-Mail</div>
-                                <div class="stat-value">${stats.deliveryMethods.email}</div>
+                                <div class="stat-label">Digital</div>
+                                <div class="stat-value">${stats.deliveryMethods.digital}</div>
                             </div>
                         </div>
                     </div>
@@ -1237,16 +1237,17 @@ function renderCharts(stats) {
         // BALKENDIAGRAMM: Versandarten
         const barCanvas = document.getElementById('deliveryBarChart');
         if (barCanvas) {
+            console.log('Chart Daten:', stats.deliveryMethods); // DEBUG
             new Chart(barCanvas, {
                 type: 'bar',
                 data: {
-                    labels: ['Vor Ort', 'Per Post', 'Per E-Mail'],
+                    labels: ['Vor Ort (Papier)', 'Per Post (Papier)', 'Digital'],
                     datasets: [{
                         label: 'Anzahl Gutscheine',
                         data: [
-                            stats.deliveryMethods.in_person,
-                            stats.deliveryMethods.mail,
-                            stats.deliveryMethods.email
+                            stats.deliveryMethods.paper_vor_ort,
+                            stats.deliveryMethods.paper_post,
+                            stats.deliveryMethods.digital
                         ],
                         backgroundColor: [
                             '#6B7C59', // Olivgrün
