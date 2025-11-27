@@ -1,0 +1,82 @@
+28:function getVoucherTypeBadge(voucher) {
+42:async function showDashboard() {
+63:async function showCreateVoucher() {
+182:async function handleCreateVoucher(event) {
+225:function showVoucherCreated(voucher, templateId = 'default') {
+280:function showPaperVoucherCreated(voucher) {
+311:function generateQRCode(code) {
+344:function showRedeemVoucher() {
+382:async function searchVoucher() {
+504:async function confirmRedeem(voucherId, amount) {
+520:async function partialRedeem(voucherId) {
+548:async function showVoucherList(filterStatus = 'all', searchTerm = '') {
+678:async function toggleVoucherCard(cardElement, voucherId) {
+791:function toggleStatsSection(sectionId) {
+799:function exportStatsToCSV(period = 'all') {
+858:function isAdmin() {
+863:function goBack() {
+872:function updateAdminButton() {
+886:function handleAdminButton() {
+897:function showAdminLogin() {
+928:function checkAdminPassword() {
+945:function adminLogout() {
+951:async function showAdminDashboard(period = 'all') {
+1201:function renderCharts(stats) {
+1290:async function confirmCancelVoucher(voucherId, voucherCode) {
+1318:function startQRScanner() {
+1352:function stopQRScanner() {
+1364:function onScanSuccess(decodedText) {
+1383:function onScanError(error) {
+1392:async function generateQRCodeDataURL(code) {
+1425:async function generateSimplePDF(voucher) {
+1643:function handleListSearch() {
+1670:async function exportAllVouchersToCSV() {
+1744:async function loadAndDisplayRedemptions() {
+1826:function changeRedemptionDate(days) {
+1844:async function exportDailyRedemptions() {
+1889:function getCurrentFilter() {
+1906:async function sortVoucherList(sortBy, searchTerm, filterStatus) {
+2050:function showChangePassword() {
+2106:function changeAdminPassword() {
+2163:async function showTemplateManager() {
+2217:async function loadTemplates() {
+2242:async function saveTemplates(templates) {
+2269:function showCreateTemplate() {
+2315:async function handleTemplateUpload(event) {
+2371:function fileToBase64(file) {
+2381:function showTemplateConfiguration(template) {
+2459:async function renderPDFOnCanvas(pdfDataUrl, width, height) {
+2481:function initDragAndDrop(template) {
+2651:function selectFieldForSizing(fieldName) {
+2704:function deselectField() {
+2711:async function saveTemplateWithPositions() {
+2802:async function editTemplate(templateId) {
+2816:async function deleteTemplate(templateId) {
+2837:async function generateVoucherPDF(voucher, templateId = 'default') {
+2852:async function generatePDFWithTemplate(voucher, templateId) {
+2971:async function previewVoucherPDF(voucher, templateId = 'default') {
+3040:function closePDFPreview() {
+3048:async function generatePDFBlob(voucher, templateId = 'default') {
+3062:async function generateSimplePDFBlob(voucher) {
+3220:async function generatePDFWithTemplateBlob(voucher, templateId) {
+3316:async function testTemplatePreview() {
+3487:function closeTestPreview() {
+3495:async function generateTestPDFWithTemplate(voucher, template, qrContainer) {
+3593:async function showManualPlacement(voucher, templateId) {
+3685:async function previewManualPDF() {
+3761:function closeManualPreview() {
+3769:async function downloadManualPDF() {
+3806:function getManualFieldPositions() {
+3853:async function generateManualPDF(voucher, template, positions, download = false) {
+3946:async function createBackup() {
+4011:function showRestoreBackup() {
+4066:async function restoreBackup() {
+4113:function createStatusChart(stats) {
+4143:function createValuesChart(stats) {
+4184:function showChartPopup(type, stats) {
+4240:function closeChartPopup() {
+4253:function createPopupStatusChart(stats) {
+4291:function createPopupValuesChart(stats) {
+4341:function toggleVoucherTypeFields() {
+4366:async function loadTemplatesIntoDropdown() {
+4388:function toggleBuyerFields() {
