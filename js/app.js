@@ -300,17 +300,13 @@ async function toggleVoucherCard(cardElement, voucherId) {
 
 // ===== STATS & EXPORT =====
 
-function toggleStatsSection(sectionId) {
-    const section = document.getElementById(sectionId);
-    const allSections = document.querySelectorAll('.stats-section');
+function toggleStatsSection(sectionId, event) {
+    if (event) event.stopPropagation();
     
-    allSections.forEach(s => {
-        if (s.id === sectionId) {
-            s.classList.toggle('expanded');
-        } else {
-            s.classList.remove('expanded');
-        }
-    });
+    const section = document.getElementById(sectionId);
+    
+    // Nur diese eine Section togglen
+    section.classList.toggle('expanded');
 }
 
 function exportStatsToCSV(period = 'all') {

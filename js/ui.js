@@ -178,49 +178,6 @@ async function showCreateVoucher() {
     document.getElementById('voucher-value').focus();
 }
 
-// Gutschein erstellen - Handler
-async function handleCreateVoucher(event) {
-    event.preventDefault();
-    
-    // Werte auslesen
-    const value = parseFloat(document.getElementById('voucher-value').value);
-    const buyerName = document.getElementById('buyer-name').value.trim();
-    const buyerEmail = document.getElementById('buyer-email').value.trim();
-    const voucherType = document.getElementById('voucher-type').value;
-    const paperDelivery = voucherType === 'paper' ? document.getElementById('paper-delivery').value : null;
-    const notes = document.getElementById('voucher-notes').value.trim();
-    const templateId = document.getElementById('voucher-template').value;
-    // Custom Code (falls erster Gutschein)
-    const manualCode = document.getElementById('voucher-code')?.value.trim() || null;
-    
-    // Validierung
-    if (!value || value <= 0) {
-        alert('Bitte gültigen Wert eingeben!');
-        return;
-    }
-    
-    // Button deaktivieren
-    const submitBtn = document.querySelector('.create-btn');
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Wird erstellt...';
-    
-    // Gutschein erstellen
-    const result = await createVoucher(value, buyerName, buyerEmail, notes, voucherType, paperDelivery, manualCode);
-    
-    if (result.success) {
-        // Erfolg - unterschiedliche Anzeige je nach Typ
-        if (voucherType === 'paper') {
-            showPaperVoucherCreated(result.voucher);
-        } else {
-            showVoucherCreated(result.voucher, templateId);
-        }
-    } else {
-        alert('Fehler: ' + result.error);
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Gutschein erstellen';
-    }
-}
-
 // Bestätigung nach Erstellung
 function showVoucherCreated(voucher, templateId = 'default') {
     const app = document.getElementById('app');
@@ -352,10 +309,10 @@ function showRedeemVoucher() {
             </div>
             
             <div class="search-box">
-                <label for="voucher-code-search">Gutschein-Code eingeben:</label>
+                <label for="redeem-code">Gutschein-Code eingeben:</label>
                 <input 
                     type="text" 
-                    id="voucher-code-search" 
+                    id="redeem-code" 
                     placeholder="z.B. GIFT-0001"
                     onkeypress="if(event.key==='Enter') searchVoucher()"
                 >
@@ -366,182 +323,20 @@ function showRedeemVoucher() {
             </div>
 
             <!-- Scanner wird hier eingefügt -->
-            <div id="qr-scanner-section"></div>
+            <div id="qr-scanner-section">
+                <div id="qr-reader" style="width: 100%; display: none;"></div>
+            </div>
             
-            <div id="search-result">
+            <div id="voucher-result">
                 <!-- Hier erscheint das Ergebnis -->
             </div>
         </div>
     `;
     
     // Fokus auf Eingabefeld
-    document.getElementById('voucher-code').focus();
-}
-
-// Gutschein suchen
-async function searchVoucher() {
-    const codeInput = document.getElementById('voucher-code-search');
-    const code = codeInput.value.trim();
-    
-    if (!code) {
-        alert('Bitte Code eingeben!');
-        return;
-    }
-    
-    const resultDiv = document.getElementById('search-result');
-    resultDiv.innerHTML = '<p>Suche...</p>';
-    
-    // Gutschein suchen
-    const voucher = await findVoucherByCode(code);
-    
-    if (!voucher) {
-        resultDiv.innerHTML = `
-            <div class="not-found">
-                <p>❌ Kein Gutschein mit Code "${code}" gefunden.</p>
-            </div>
-        `;
-        return;
-    }
-    
-    // Prüfen ob abgelaufen
-    const now = new Date();
-    const expiryDate = new Date(voucher.expires_at);
-    const isExpired = expiryDate < now;
-    
-    // Status-Anzeige
-    let statusHTML = '';
-    if (voucher.status === 'redeemed') {
-        statusHTML = '<span class="status-redeemed">Bereits eingelöst</span>';
-    } else if (isExpired || voucher.status === 'expired') {
-        statusHTML = '<span class="status-expired">Abgelaufen</span>';
-    } else {
-        statusHTML = '<span class="status-active">Aktiv</span>';
-    }
-    
-    // Datum formatieren
-    const formattedExpiry = expiryDate.toLocaleDateString('de-DE');
-    
-    // Kann eingelöst werden?
-    const canRedeem = voucher.status === 'active' && !isExpired && voucher.remaining_value > 0;
-    
-    // Ergebnis anzeigen
-    resultDiv.innerHTML = `
-        <div class="voucher-details">
-            <h3>Gutschein gefunden</h3>
-            
-            <div class="detail-row">
-                <span class="detail-label">Code:</span>
-                <span class="detail-value"><strong>${voucher.code}</strong></span>
-            </div>
-            
-            <div class="detail-row">
-                <span class="detail-label">Ursprünglicher Wert:</span>
-                <span class="detail-value">${parseFloat(voucher.original_value).toFixed(2)} €</span>
-            </div>
-            
-            <div class="detail-row">
-                <span class="detail-label">Restwert:</span>
-                <span class="detail-value"><strong>${parseFloat(voucher.remaining_value).toFixed(2)} €</strong></span>
-            </div>
-            
-            <div class="detail-row">
-                <span class="detail-label">Status:</span>
-                <span class="detail-value">${statusHTML}</span>
-            </div>
-            
-            <div class="detail-row">
-                <span class="detail-label">Gültig bis:</span>
-                <span class="detail-value">${formattedExpiry}</span>
-            </div>
-
-            ${parseFloat(voucher.original_value) - parseFloat(voucher.remaining_value) > 0 ? `
-            <div class="detail-row">
-                <span class="detail-label">Bereits eingelöst:</span>
-                <span class="detail-value">${(parseFloat(voucher.original_value) - parseFloat(voucher.remaining_value)).toFixed(2)} €</span>
-            </div>
-            ` : ''}
-            
-            ${voucher.redeemed_at ? `
-            <div class="detail-row">
-                <span class="detail-label">Eingelöst am:</span>
-                <span class="detail-value">${new Date(voucher.redeemed_at).toLocaleDateString('de-DE')}</span>
-            </div>
-            ` : ''}
-            
-            ${canRedeem ? `
-                <div class="redeem-section">
-                    <h4>Einlösen:</h4>
-                    <div class="redeem-input">
-                        <label for="redeem-amount">Betrag (€):</label>
-                        <input 
-                            type="number" 
-                            id="redeem-amount" 
-                            value="${voucher.remaining_value}"
-                            min="0.01"
-                            max="${voucher.remaining_value}"
-                            step="0.01"
-                        >
-                    </div>
-                    <div class="redeem-buttons">
-                        <button onclick="confirmRedeem('${voucher.id}', ${voucher.remaining_value})">
-                            Komplett einlösen (${parseFloat(voucher.remaining_value).toFixed(2)} €)
-                        </button>
-                        <button class="secondary" onclick="partialRedeem('${voucher.id}')">
-                            Teil-Betrag einlösen
-                        </button>
-                    </div>
-                </div>
-            ` : `
-                <div class="cannot-redeem">
-                    <p>⚠️ Dieser Gutschein kann nicht eingelöst werden.</p>
-                </div>
-            `}
-        </div>
-    `;
-}
-
-// Komplett einlösen
-async function confirmRedeem(voucherId, amount) {
-    if (!confirm(`Gutschein über ${parseFloat(amount).toFixed(2)} € komplett einlösen?`)) {
-        return;
-    }
-    
-    const result = await redeemVoucher(voucherId, amount);
-    
-    if (result.success) {
-        alert('✅ Gutschein erfolgreich eingelöst!');
-        showDashboard();
-    } else {
-        alert('❌ Fehler: ' + result.error);
-    }
-}
-
-// Teil-Betrag einlösen
-async function partialRedeem(voucherId) {
-    const amountInput = document.getElementById('redeem-amount');
-    const amount = parseFloat(amountInput.value);
-    
-    if (!amount || amount <= 0) {
-        alert('Bitte gültigen Betrag eingeben!');
-        return;
-    }
-    
-    if (!confirm(`${amount.toFixed(2)} € einlösen?`)) {
-        return;
-    }
-    
-    const result = await redeemVoucher(voucherId, amount);
-    
-    if (result.success) {
-        if (result.fullyRedeemed) {
-            alert('✅ Gutschein komplett eingelöst!');
-        } else {
-            alert(`✅ ${amount.toFixed(2)} € eingelöst!\nRestwert: ${result.newRemaining.toFixed(2)} €`);
-        }
-        showDashboard();
-    } else {
-        alert('❌ Fehler: ' + result.error);
-    }
+    setTimeout(() => {
+        document.getElementById('redeem-code')?.focus();
+    }, 100);
 }
 
 // Gutschein-Liste anzeigen (klappbare Karten)
@@ -674,199 +469,12 @@ async function showVoucherList(filterStatus = 'all', searchTerm = '') {
 `;
 }
 
-// Karte auf-/zuklappen
-async function toggleVoucherCard(cardElement, voucherId) {
-    const detailsDiv = document.getElementById('details-' + voucherId);
-    
-    const arrow = cardElement.querySelector('.card-arrow');
-    
-    // Wenn schon offen, schließen
-    if (detailsDiv.style.display === 'block') {
-        detailsDiv.style.display = 'none';
-        cardElement.classList.remove('expanded');
-        arrow.textContent = '▶';
-        return;
-    }
-    
-    // Öffnen und Daten laden
-    detailsDiv.style.display = 'block';
-    cardElement.classList.add('expanded');
-    arrow.textContent = '▼';
-    
-    // Gutschein-Daten laden
-    const voucher = await findVoucherById(voucherId);
-    
-    if (!voucher) {
-        detailsDiv.innerHTML = '<p>Fehler beim Laden.</p>';
-        return;
-    }
-    
-    // Transaktionen laden
-    const transactions = await loadVoucherTransactions(voucherId);
-    
-    // Werte berechnen
-    const redeemedAmount = parseFloat(voucher.original_value) - parseFloat(voucher.remaining_value);
-    const expiryDate = new Date(voucher.expires_at).toLocaleDateString('de-DE');
-    
-    // Transaktions-Historie erstellen
-    let historyHTML = '';
-    if (transactions.length > 0) {
-        historyHTML = `
-            <div class="transaction-history">
-                <strong>Einlösungs-Historie:</strong>
-                <ul>
-        `;
-        
-        transactions.forEach(trans => {
-            const transDate = new Date(trans.created_at).toLocaleDateString('de-DE');
-            const transTime = new Date(trans.created_at).toLocaleTimeString('de-DE', {
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-            
-            let actionText = '';
-            if (trans.action === 'created') {
-                actionText = 'Erstellt';
-            } else if (trans.action === 'redeemed') {
-                actionText = `Komplett eingelöst (${parseFloat(trans.amount).toFixed(2)} €)`;
-            } else if (trans.action === 'partial_redeem') {
-                actionText = `Teil-Einlösung: ${parseFloat(trans.amount).toFixed(2)} €`;
-            }
-            
-            historyHTML += `
-                <li>
-                    <span class="trans-date">${transDate} ${transTime}</span>
-                    <span class="trans-action">${actionText}</span>
-                </li>
-            `;
-        });
-        
-        historyHTML += `
-                </ul>
-            </div>
-        `;
-    } else {
-        historyHTML = '<p class="no-history">Noch keine Einlösungen.</p>';
-    }
-    
-    // Details anzeigen
-    detailsDiv.innerHTML = `
-        <div class="detail-grid">
-            <div class="detail-item">
-                <span class="label">Wert:</span>
-                <span class="value">${parseFloat(voucher.original_value).toFixed(2)} €</span>
-            </div>
-            <div class="detail-item">
-                <span class="label">Restwert:</span>
-                <span class="value">${parseFloat(voucher.remaining_value).toFixed(2)} €</span>
-            </div>
-            <div class="detail-item">
-                <span class="label">Eingelöst:</span>
-                <span class="value">${redeemedAmount > 0 ? redeemedAmount.toFixed(2) + ' €' : '-'}</span>
-            </div>
-            <div class="detail-item">
-                <span class="label">Gültig bis:</span>
-                <span class="value">${expiryDate}</span>
-            </div>
-            ${voucher.buyer_name ? `
-            <div class="detail-item">
-                <span class="label">Käufer:</span>
-                <span class="value">${voucher.buyer_name}</span>
-            </div>
-            ` : ''}
-        </div>
-        ${historyHTML}
-        
-        ${isAdmin() && voucher.status !== 'cancelled' ? `
-        <div class="cancel-voucher-section">
-            <button class="cancel-btn" onclick="event.stopPropagation(); confirmCancelVoucher('${voucher.id}', '${voucher.code}')">
-                🗑️ Gutschein stornieren
-            </button>
-        </div>
-        ` : ''}
-    `;
-}
-
-// Statistik-Sektion auf/zuklappen
-function toggleStatsSection(sectionId) {
-    const section = document.getElementById(sectionId);
-    if (section) {
-        section.classList.toggle('expanded');
-    }
-}
-
-// CSV-Export für Statistiken (flexibel mit Filter)
-function exportStatsToCSV(period = 'all') {
-    // Zeitstempel für Dateinamen
-    const now = new Date();
-    const timestamp = now.toISOString().split('T')[0]; // YYYY-MM-DD
-    
-    // CSV-Header
-    let csv = 'Statistik,Anzahl,Wert (EUR)\n';
-    
-    // Daten aus den aktuell angezeigten Statistiken holen
-    loadStatsFiltered(period).then(stats => {
-        // Status-Übersicht
-        csv += `Aktive Gutscheine,${stats.active},${stats.activeValue.toFixed(2)}\n`;
-        csv += `Eingelöste Gutscheine,${stats.redeemed},${stats.redeemedValue.toFixed(2)}\n`;
-        csv += `Abgelaufene Gutscheine,${stats.expired},${stats.expiredValue.toFixed(2)}\n`;
-        csv += '\n';
-        
-        // Kennzahlen
-        csv += `Gesamt verkauft,${stats.total},${stats.totalValue.toFixed(2)}\n`;
-        csv += `Durchschnittswert pro Gutschein,-,${stats.averageValue.toFixed(2)}\n`;
-        csv += `Einlösungsrate (%),${stats.redemptionRate.toFixed(1)},-\n`;
-        csv += '\n';
-        
-        // Versandarten
-        csv += 'Versandart,Anzahl,-\n';
-        csv += `Vor Ort (Papier),${stats.deliveryMethods.paper_vor_ort},-\n`;
-        csv += `Per Post (Papier),${stats.deliveryMethods.paper_post},-\n`;
-        csv += `Digital,${stats.deliveryMethods.digital},-\n`;
-        
-        // Zeitraum-Text für Dateinamen
-        let periodText = 'gesamt';
-        if (period === '7days') periodText = '7-tage';
-        else if (period === 'month') periodText = 'monat';
-        else if (period === 'year') periodText = 'jahr';
-        
-        // CSV-Download auslösen
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        const url = URL.createObjectURL(blob);
-        
-        link.setAttribute('href', url);
-        link.setAttribute('download', `gutschein-statistiken-${periodText}-${timestamp}.csv`);
-        link.style.visibility = 'hidden';
-        
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        console.log('CSV-Export erfolgreich:', periodText);
-    });
-}
-
 // ====================================
 // ADMIN-SYSTEM
 // ====================================
 
 // Admin-Passwort (später in Supabase auslagern)
 const ADMIN_PASSWORD = '0103'; // ÄNDERE DIES!
-
-// Admin-Status prüfen
-function isAdmin() {
-    return sessionStorage.getItem('isAdmin') === 'true';
-}
-
-// Intelligente Zurück-Funktion
-function goBack() {
-    if (isAdmin()) {
-        showAdminDashboard();
-    } else {
-        showDashboard();
-    }
-}
 
 // Admin-Button Text aktualisieren
 function updateAdminButton() {
@@ -879,17 +487,6 @@ function updateAdminButton() {
             btn.innerHTML = '🔐 Admin';
             btn.style.backgroundColor = '#6B7C59';
         }
-    }
-}
-
-// Admin-Button Klick
-function handleAdminButton() {
-    if (isAdmin()) {
-        // Wenn schon eingeloggt → Admin-Dashboard anzeigen
-        showAdminDashboard();
-    } else {
-        // Wenn nicht eingeloggt → Login anzeigen
-        showAdminLogin();
     }
 }
 
@@ -924,29 +521,6 @@ function showAdminLogin() {
     }, 100);
 }
 
-// Passwort prüfen
-function checkAdminPassword() {
-    const input = document.getElementById('admin-password').value;
-    const errorDiv = document.getElementById('login-error');
-    
-    if (input === ADMIN_PASSWORD) {
-        // Login erfolgreich
-        sessionStorage.setItem('isAdmin', 'true');
-        showAdminDashboard();
-    } else {
-        // Falsches Passwort
-        errorDiv.style.display = 'block';
-        document.getElementById('admin-password').value = '';
-        document.getElementById('admin-password').focus();
-    }
-}
-
-// Admin ausloggen
-function adminLogout() {
-    sessionStorage.removeItem('isAdmin');
-    showDashboard();
-}
-
 // Admin-Dashboard anzeigen
 async function showAdminDashboard(period = 'all') {
     if (!isAdmin()) {
@@ -957,6 +531,11 @@ async function showAdminDashboard(period = 'all') {
     // Aktuelle expanded-States merken (vor dem Neurendern)
     const wasStatsExpanded = document.getElementById('box-stats')?.classList.contains('expanded');
     const wasVerwaltungExpanded = document.getElementById('box-verwaltung')?.classList.contains('expanded');
+    const wasStatusExpanded = document.getElementById('stats-status')?.classList.contains('expanded');
+    const wasMetricsExpanded = document.getElementById('stats-metrics')?.classList.contains('expanded');
+    const wasDeliveryExpanded = document.getElementById('stats-delivery')?.classList.contains('expanded');
+    const wasRedemptionsExpanded = document.getElementById('stats-redemptions')?.classList.contains('expanded');
+    const wasChartsExpanded = document.getElementById('stats-charts')?.classList.contains('expanded');
     console.log('DEBUG: Stats war expanded?', wasStatsExpanded);
     console.log('DEBUG: Verwaltung war expanded?', wasVerwaltungExpanded);
     
@@ -991,7 +570,7 @@ async function showAdminDashboard(period = 'all') {
             </div>
             
             <!-- BOX 2: STATISTIKEN (KLAPPBAR) -->
-            <div class="stats-section ${wasStatsExpanded ? 'expanded' : ''}" id="box-stats" onclick="toggleStatsSection('box-stats')" style="background: #F6EAD2; padding: 25px; border-radius: 8px; margin-bottom: 25px; border: 2px solid #6B7C59;">
+            <div class="stats-section ${wasStatsExpanded ? 'expanded' : ''}" id="box-stats" onclick="toggleStatsSection('box-stats', event)" style="background: #F6EAD2; padding: 25px; border-radius: 8px; margin-bottom: 25px; border: 2px solid #6B7C59;">
                 <div class="stats-header">
                     <div class="stats-title" style="display: flex; align-items: center; gap: 10px;">
                         <span class="stats-arrow">▶</span>
@@ -1017,7 +596,7 @@ async function showAdminDashboard(period = 'all') {
                 </div>
                 
                 <!-- KLAPPBAR: STATUS-ÜBERSICHT -->
-                <div class="stats-section" id="stats-status" onclick="toggleStatsSection('stats-status')">
+                <div class="stats-section ${wasStatusExpanded ? 'expanded' : ''}" id="stats-status" onclick="toggleStatsSection('stats-status', event)">
                     <div class="stats-header">
                         <div class="stats-title">
                             <span class="stats-arrow">▶</span>
@@ -1048,7 +627,7 @@ async function showAdminDashboard(period = 'all') {
                 </div>
                 
                 <!-- KLAPPBAR: KENNZAHLEN -->
-                <div class="stats-section" id="stats-metrics" onclick="toggleStatsSection('stats-metrics')">
+                <div class="stats-section ${wasMetricsExpanded ? 'expanded' : ''}" id="stats-metrics" onclick="toggleStatsSection('stats-metrics', event)">
                     <div class="stats-header">
                         <div class="stats-title">
                             <span class="stats-arrow">▶</span>
@@ -1077,7 +656,7 @@ async function showAdminDashboard(period = 'all') {
                 </div>
                 
                 <!-- KLAPPBAR: VERSANDARTEN -->
-                <div class="stats-section" id="stats-delivery" onclick="toggleStatsSection('stats-delivery')">
+                <div class="stats-section ${wasDeliveryExpanded ? 'expanded' : ''}" id="stats-delivery" onclick="toggleStatsSection('stats-delivery', event)">
                     <div class="stats-header">
                         <div class="stats-title">
                             <span class="stats-arrow">▶</span>
@@ -1105,7 +684,7 @@ async function showAdminDashboard(period = 'all') {
                 </div>
                 
                 <!-- KLAPPBAR: KASSENABSCHLUSS -->
-                <div class="stats-section" id="stats-redemptions" onclick="toggleStatsSection('stats-redemptions')">
+                <div class="stats-section ${wasRedemptionsExpanded ? 'expanded' : ''}" id="stats-redemptions" onclick="toggleStatsSection('stats-redemptions', event)">
                     <div class="stats-header">
                         <div class="stats-title">
                             <span class="stats-arrow">▶</span>
@@ -1150,7 +729,7 @@ async function showAdminDashboard(period = 'all') {
                 </div>
 
                 <!-- KLAPPBAR: DIAGRAMME -->
-                <div class="stats-section" id="stats-charts" onclick="toggleStatsSection('stats-charts')">
+                <div class="stats-section ${wasChartsExpanded ? 'expanded' : ''}" id="stats-charts" onclick="toggleStatsSection('stats-charts', event)">
                     <div class="stats-header">
                         <div class="stats-title">
                             <span class="stats-arrow">▶</span>
@@ -1172,7 +751,7 @@ async function showAdminDashboard(period = 'all') {
         </div>
             
             <!-- BOX 3: VERWALTUNG (KLAPPBAR) -->
-            <div class="stats-section ${wasVerwaltungExpanded ? 'expanded' : ''}" id="box-verwaltung" onclick="toggleStatsSection('box-verwaltung')" style="background: #F6EAD2; padding: 25px; border-radius: 8px; margin-bottom: 25px; border: 2px solid #6B7C59;">
+            <div class="stats-section ${wasVerwaltungExpanded ? 'expanded' : ''}" id="box-verwaltung" onclick="toggleStatsSection('box-verwaltung', event)" style="background: #F6EAD2; padding: 25px; border-radius: 8px; margin-bottom: 25px; border: 2px solid #6B7C59;">
                 <div class="stats-header">
                     <div class="stats-title" style="display: flex; align-items: center; gap: 10px;">
                         <span class="stats-arrow">▶</span>
@@ -1286,103 +865,11 @@ function renderCharts(stats) {
     }, 100);
 }
 
-// Gutschein stornieren (nur Admin)
-async function confirmCancelVoucher(voucherId, voucherCode) {
-    // Sicherheitsabfrage
-    const reason = prompt(`Gutschein ${voucherCode} wirklich stornieren?\n\nGrund (optional):`);
-    
-    // Abgebrochen
-    if (reason === null) {
-        return;
-    }
-    
-    // Stornieren
-    const result = await cancelVoucher(voucherId, reason || 'Ohne Angabe von Gründen');
-    
-    if (result.success) {
-        alert('✅ Gutschein erfolgreich storniert!');
-        // Gutschein-Liste neu laden
-        showVoucherList();
-    } else {
-        alert('❌ Fehler: ' + result.error);
-    }
-}
-
 // ====================================
 // QR-CODE SCANNER
 // ====================================
 
 let html5QrcodeScanner = null;
-
-// Scanner starten
-function startQRScanner() {
-    const scannerDiv = document.getElementById('qr-scanner-section');
-    
-    scannerDiv.innerHTML = `
-        <div class="scanner-container">
-            <h3>📷 QR-Code scannen</h3>
-            <div id="qr-reader"></div>
-            <div class="scanner-info">
-                📱 Richte die Kamera auf den QR-Code
-            </div>
-            <div class="scanner-buttons">
-                <button onclick="stopQRScanner()">❌ Abbrechen</button>
-            </div>
-        </div>
-    `;
-    
-    // Scanner initialisieren
-    html5QrcodeScanner = new Html5Qrcode("qr-reader");
-    
-    html5QrcodeScanner.start(
-        { facingMode: "environment" }, // Rückkamera bevorzugen
-        {
-            fps: 10,
-            qrbox: { width: 250, height: 250 }
-        },
-        onScanSuccess,
-        onScanError
-    ).catch(err => {
-        console.error('Scanner-Start-Fehler:', err);
-        alert('Kamera konnte nicht gestartet werden. Stelle sicher, dass du den Kamera-Zugriff erlaubt hast.');
-    });
-}
-
-// Scanner stoppen
-function stopQRScanner() {
-    if (html5QrcodeScanner) {
-        html5QrcodeScanner.stop().then(() => {
-            html5QrcodeScanner = null;
-            document.getElementById('qr-scanner-section').innerHTML = '';
-        }).catch(err => {
-            console.error('Fehler beim Stoppen:', err);
-        });
-    }
-}
-
-// Erfolgreicher Scan
-function onScanSuccess(decodedText) {
-    console.log('QR-Code gescannt:', decodedText);
-    
-    // Scanner stoppen
-    stopQRScanner();
-    
-    // Code ins Suchfeld eintragen
-    const inputField = document.getElementById('voucher-code-search');
-    if (inputField) {
-        inputField.value = decodedText;
-    }
-    
-    // Kurz warten und dann automatisch suchen
-    setTimeout(() => {
-        searchVoucher();
-    }, 300);
-}
-
-// Scan-Fehler (ignorieren, passiert ständig)
-function onScanError(error) {
-    // Nicht loggen - zu viele Meldungen
-}
 
 // ====================================
 // EINFACHER PDF-GUTSCHEIN
@@ -4335,62 +3822,4 @@ function createPopupValuesChart(stats) {
             }
         }
     });
-}
-
-// Felder je nach Gutschein-Art ein-/ausblenden
-function toggleVoucherTypeFields() {
-    const type = document.getElementById('voucher-type').value;
-    const paperDelivery = document.getElementById('paper-delivery-group');
-    const templateGroup = document.getElementById('template-group');
-    
-    if (type === 'paper') {
-        // Papier: Versandart zeigen, Template verstecken
-        paperDelivery.style.display = 'block';
-        if (templateGroup) templateGroup.style.display = 'none';
-    } else if (type === 'digital') {
-        // Digital: Versandart verstecken, Template zeigen
-        paperDelivery.style.display = 'none';
-        if (templateGroup) {
-            templateGroup.style.display = 'block';
-            // Templates lazy laden
-            loadTemplatesIntoDropdown();
-        }
-    } else {
-        // Nichts gewählt: alles verstecken
-        paperDelivery.style.display = 'none';
-        if (templateGroup) templateGroup.style.display = 'none';
-    }
-}
-
-// Templates lazy in Dropdown laden (nur beim ersten Mal)
-async function loadTemplatesIntoDropdown() {
-    const select = document.getElementById('voucher-template');
-    
-    // Prüfen ob schon geladen
-    if (!select || select.dataset.loaded === 'true') return;
-    
-    // Templates aus Supabase laden
-    const templates = await loadTemplates();
-    
-    // In Dropdown einfügen
-    templates.forEach(t => {
-        const option = document.createElement('option');
-        option.value = t.id;
-        option.textContent = t.name;
-        select.appendChild(option);
-    });
-    
-    // Markieren als geladen
-    select.dataset.loaded = 'true';
-}
-
-// Käufer-Felder ein-/ausklappen
-function toggleBuyerFields() {
-    const fields = document.getElementById('buyer-fields');
-    
-    if (fields.style.display === 'none') {
-        fields.style.display = 'block';
-    } else {
-        fields.style.display = 'none';
-    }
 }
