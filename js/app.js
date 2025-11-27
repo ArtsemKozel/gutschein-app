@@ -336,6 +336,9 @@ function exportStatsToCSV(period = 'all') {
 // ===== QR SCANNER =====
 
 function startQRScanner() {
+    const qrReader = document.getElementById('qr-reader');
+    qrReader.style.display = 'block';
+    
     const html5QrCode = new Html5Qrcode("qr-reader");
     html5QrCode.start(
         { facingMode: "environment" },
