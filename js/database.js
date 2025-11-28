@@ -318,7 +318,7 @@ async function createVoucher(value, buyerName, buyerEmail, notes, voucherType, p
     
     // Ablaufdatum: 2 Jahre ab heute
     const expiryDate = new Date();
-    expiryDate.setFullYear(expiryDate.getFullYear() + 2);
+    expiryDate.setFullYear(expiryDate.getFullYear() + 3);
     
     // Gutschein speichern
     const { data, error } = await supabase
